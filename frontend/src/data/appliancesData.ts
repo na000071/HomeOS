@@ -1,0 +1,38 @@
+export const appliancesData = [
+    {
+      id: 1,
+      name: "Refrigerator",
+      brand: "Samsung",
+      room: "Kitchen",
+      warranty: "Active",
+      model: "RF28T5001",
+      purchaseDate: "March 18, 2026",
+    },
+    {
+      id: 2,
+      name: "Washing Machine",
+      brand: "LG",
+      room: "Kitchen",
+      warranty: "Expiring Soon",
+      model: "WM4000H",
+      purchaseDate: "November 12, 2025",
+    },
+    {
+      id: 3,
+      name: "Television",
+      brand: "Sony",
+      room: "Living Room",
+      warranty: "Active",
+      model: "XR55X90L",
+      purchaseDate: "January 8, 2026",
+    },
+    {
+      id: 4,
+      name: "Microwave",
+      brand: "Panasonic",
+      room: "Kitchen",
+      warranty: "No Warranty",
+      model: "NN-SN686S",
+      purchaseDate: "August 21, 2024",
+    },
+  ];
