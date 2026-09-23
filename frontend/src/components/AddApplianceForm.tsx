@@ -45,12 +45,12 @@ type AddApplianceFormProps = {
                     event.preventDefault();
 
                     onSave({
-                    name: "New Appliance",
-                    brand: "Unknown",
-                    room: "Kitchen",
-                    warranty: "No Warranty",
-                    model: "Not added",
-                    purchaseDate: "Not added",
+                      name,
+                      brand,
+                      room,
+                      warranty: "No Warranty",
+                      model,
+                      purchaseDate,
                     });
                 }}
           >
