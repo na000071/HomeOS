@@ -1,0 +1,21 @@
+# Node
+node_modules/
+dist/
+.next/
+
+# Environment files
+.env
+.env.local
+
+# Visual Studio
+.vs/
+*.user
+*.suo
+
+# .NET
+bin/
+obj/
+
+# OS
+.DS_Store
+Thumbs.db
