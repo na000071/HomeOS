@@ -11,6 +11,10 @@ type AddApplianceFormProps = {
     const [model, setModel] = useState("");
     const [room, setRoom] = useState("");
     const [purchaseDate, setPurchaseDate] = useState("");
+    const [category, setCategory] = useState("");
+    const [serialNumber, setSerialNumber] = useState("");
+    const [purchasePrice, setPurchasePrice] = useState("");
+    const [notes, setNotes] = useState("");
     return (
       <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 p-4">
         <div className="w-full max-w-2xl rounded-xl bg-white p-6 shadow-xl">
@@ -51,6 +55,10 @@ type AddApplianceFormProps = {
                       warranty: "No Warranty",
                       model,
                       purchaseDate,
+                      category,
+                      serialNumber,
+                      purchasePrice,
+                      notes,
                     });
                 }}
           >
@@ -105,6 +113,8 @@ type AddApplianceFormProps = {
                 <input
                   type="text"
                   placeholder="Enter serial number"
+                  value={serialNumber}
+                  onChange={(event) => setSerialNumber(event.target.value)}
                   className="mt-2 w-full rounded-lg border border-stone-200 px-4 py-3 text-sm outline-none focus:border-[#5E7563]"
                 />
               </div>
@@ -114,7 +124,11 @@ type AddApplianceFormProps = {
                   Category
                 </label>
   
-                <select className="mt-2 w-full rounded-lg border border-stone-200 bg-white px-4 py-3 text-sm outline-none focus:border-[#5E7563]">
+                <select 
+                 
+                 value={category}
+                 onChange={(event) => setCategory(event.target.value)}
+                 className="mt-2 w-full rounded-lg border border-stone-200 bg-white px-4 py-3 text-sm outline-none focus:border-[#5E7563]">
                   
                   <option value="">Select a category</option>
                   <option value="kitchen">Kitchen</option>
@@ -165,6 +179,8 @@ type AddApplianceFormProps = {
                 <input
                   type="number"
                   placeholder="0.00"
+                  value={purchasePrice}
+                  onChange={(event) => setPurchasePrice(event.target.value)}
                   className="mt-2 w-full rounded-lg border border-stone-200 px-4 py-3 text-sm outline-none focus:border-[#5E7563]"
                 />
               </div>
@@ -178,6 +194,8 @@ type AddApplianceFormProps = {
               <textarea
                 rows={3}
                 placeholder="Add any notes about this appliance..."
+                value={notes}
+                onChange={(event) => setNotes(event.target.value)}
                 className="mt-2 w-full resize-none rounded-lg border border-stone-200 px-4 py-3 text-sm outline-none focus:border-[#5E7563]"
               />
             </div>

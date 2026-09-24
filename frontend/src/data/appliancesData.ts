@@ -7,6 +7,10 @@ export const appliancesData = [
       warranty: "Active",
       model: "RF28T5001",
       purchaseDate: "March 18, 2026",
+      category: "Kitchen Appliance",
+      serialNumber: "SN-WM-002",
+      purchasePrice: "899.99",
+      notes: "Purchased for main laundry area",
     },
     {
       id: 2,
@@ -16,6 +20,10 @@ export const appliancesData = [
       warranty: "Expiring Soon",
       model: "WM4000H",
       purchaseDate: "November 12, 2025",
+      category: "Laundry Appliance",
+      serialNumber: "SN-WM-001",
+      purchasePrice: "699.99",
+      notes: "Purchased for main laundry area",
     },
     {
       id: 3,
@@ -25,6 +33,10 @@ export const appliancesData = [
       warranty: "Active",
       model: "XR55X90L",
       purchaseDate: "January 8, 2026",
+      category: "Entertainment Appliance",
+      serialNumber: "SN-TV-001",
+      purchasePrice: "1199.99",
+      notes: "Purchased for main living area",
     },
     {
       id: 4,
@@ -34,5 +46,9 @@ export const appliancesData = [
       warranty: "No Warranty",
       model: "NN-SN686S",
       purchaseDate: "August 21, 2024",
+      category: "Kitchen Appliance",
+      serialNumber: "SN-MW-001",
+      purchasePrice: "149.99",
+      notes: "Purchased for main kitchen area",
     },
   ];
