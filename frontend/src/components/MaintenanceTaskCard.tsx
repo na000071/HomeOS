@@ -20,11 +20,11 @@ function MaintenanceTaskCard({ task, onViewTask }: MaintenanceTaskCardProps) {
   const appliance = getApplianceById(task.applianceId);
 
   return (
-    <Card className="p-5 transition hover:shadow-sm">
+    <Card className="border-stone-200/80 p-5 shadow-[0_5px_18px_rgba(72,66,52,0.04)] transition-all duration-200 hover:-translate-y-0.5 hover:border-[#C9D7CB] hover:shadow-[0_12px_28px_rgba(72,66,52,0.09)]">
       <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-3">
-            <h2 className="text-lg font-semibold text-[#20211F]">{task.title}</h2>
+            <h2 className="text-lg font-semibold tracking-tight text-[#20211F]">{task.title}</h2>
             <MaintenanceStatusBadge status={task.status} />
           </div>
 
@@ -50,7 +50,7 @@ function MaintenanceTaskCard({ task, onViewTask }: MaintenanceTaskCardProps) {
           </div>
         </div>
 
-        <div className="flex min-w-[180px] flex-col gap-2 rounded-xl border border-stone-200 bg-stone-50 px-4 py-3 text-left lg:text-right">
+        <div className="flex min-w-[180px] flex-col gap-2 rounded-xl border border-stone-200/80 bg-[#FAFAF7] px-4 py-3 text-left lg:text-right">
           <div>
             <p className="text-xs uppercase tracking-[0.12em] text-stone-500">Due date</p>
             <p className="mt-1 text-sm font-medium text-stone-700">

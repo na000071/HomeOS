@@ -19,8 +19,8 @@ function MaintenanceSummaryCard({
   tone = "default",
 }: MaintenanceSummaryCardProps) {
   return (
-    <div className={`rounded-2xl border p-5 shadow-sm ${toneClasses[tone]}`}>
-      <p className="text-sm font-medium text-stone-500">{label}</p>
+    <div className={`rounded-2xl border p-5 shadow-[0_8px_24px_rgba(72,66,52,0.06)] transition-transform duration-200 hover:-translate-y-0.5 ${toneClasses[tone]}`}>
+      <p className="text-xs font-semibold uppercase tracking-[0.12em] text-stone-500">{label}</p>
 
       <p className="mt-3 text-3xl font-semibold tracking-tight">{value}</p>
 

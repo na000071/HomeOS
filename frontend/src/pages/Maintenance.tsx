@@ -109,11 +109,11 @@ function Maintenance() {
   };
 
   return (
-    <div className="space-y-8">
+    <div className="mx-auto max-w-[1440px] space-y-8 pb-10">
       <header className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div>
           <p className="text-sm font-medium text-stone-500">Home care</p>
-          <h1 className="mt-1 text-3xl font-semibold tracking-tight text-[#20211F]">
+          <h1 className="mt-1 text-4xl font-semibold tracking-[-0.03em] text-[#20211F]">
             Maintenance
           </h1>
           <p className="mt-2 max-w-2xl text-sm text-stone-500">
@@ -151,14 +151,14 @@ function Maintenance() {
         />
       </section>
 
-      <section className="rounded-2xl border border-stone-200 bg-white p-5 shadow-sm">
+      <section className="rounded-3xl border border-stone-200/80 bg-white/90 p-4 shadow-[0_14px_40px_rgba(72,66,52,0.07)] backdrop-blur-sm sm:p-6">
         <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div>
-            <h2 className="text-xl font-semibold text-[#20211F]">Task List</h2>
+            <h2 className="text-2xl font-semibold tracking-tight text-[#20211F]">Task List</h2>
             <p className="mt-1 text-sm text-stone-500">Prioritized routines for home upkeep</p>
           </div>
 
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
+          <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2 xl:grid-cols-3">
             <label className="sr-only" htmlFor="task-status-filter">
               Filter by status
             </label>
@@ -171,7 +171,7 @@ function Maintenance() {
                   status: event.target.value as MaintenanceTaskFilters["status"],
                 }))
               }
-              className="rounded-lg border border-stone-200 bg-white px-4 py-2.5 text-sm text-stone-600 outline-none transition focus:border-[#5E7563] focus-visible:ring-2 focus-visible:ring-[#5E7563] focus-visible:ring-offset-1"
+              className="rounded-xl border border-stone-200 bg-[#FAFAF8] px-3.5 py-2.5 text-sm text-stone-600 outline-none transition focus:border-[#5E7563] focus-visible:ring-2 focus-visible:ring-[#5E7563] focus-visible:ring-offset-1"
               aria-label="Filter tasks by status"
             >
               <option value="all">All Statuses</option>

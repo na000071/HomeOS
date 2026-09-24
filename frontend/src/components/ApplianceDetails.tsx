@@ -1,6 +1,13 @@
 import { maintenanceData } from "../data/maintenanceData";
+import { warrantiesData } from "../data/warrantiesData";
 import { formatMaintenanceDate } from "../services/maintenanceDateService";
+import {
+  getWarrantyExpirationInfo,
+  withCalculatedWarrantyStatus,
+} from "../services/warrantyDateService";
 import MaintenanceStatusBadge from "./MaintenanceStatusBadge";
+import WarrantyStatusBadge from "./WarrantyStatusBadge";
+import WarrantyEmptyState from "./WarrantyEmptyState.tsx";
 import type { Appliance } from "../utils/applianceUtils";
 
 type ApplianceDetailsProps = {
@@ -9,6 +16,8 @@ type ApplianceDetailsProps = {
     onEdit: () => void;
     onDelete: () => void;
   onAddMaintenance: () => void;
+    onViewWarranty: (warrantyId: number) => void;
+  onAddWarranty: () => void;
   };
   
   function ApplianceDetails({
@@ -17,10 +26,21 @@ type ApplianceDetailsProps = {
     onEdit,
     onDelete,
     onAddMaintenance,
+    onViewWarranty,
+    onAddWarranty,
   }: ApplianceDetailsProps) {
     const maintenanceTasks = maintenanceData.filter(
       (task) => task.applianceId === appliance.id,
     );
+    const applianceWarrantyRecord = warrantiesData.find(
+      (warranty) => warranty.applianceId === appliance.id,
+    );
+    const applianceWarranty = applianceWarrantyRecord
+      ? withCalculatedWarrantyStatus(applianceWarrantyRecord)
+      : null;
+    const warrantyExpiration = applianceWarranty
+      ? getWarrantyExpirationInfo(applianceWarranty.endDate)
+      : null;
 
     return (
       <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 p-6">
@@ -146,6 +166,55 @@ type ApplianceDetailsProps = {
                   Add maintenance task
                 </button>
               </div>
+            )}
+          </div>
+
+          <div className="mt-8 border-t border-stone-100 pt-6">
+            <p className="text-sm text-stone-500">Warranty</p>
+            <h3 className="mt-1 text-lg font-semibold text-[#20211F]">Appliance warranty</h3>
+
+            {applianceWarranty && warrantyExpiration ? (
+              <div className="mt-4 rounded-xl border border-stone-200 bg-stone-50 p-4">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                  <div>
+                    <p className="font-medium text-stone-800">{applianceWarranty.provider}</p>
+                    <p className="mt-1 text-sm text-stone-500">{applianceWarranty.warrantyType}</p>
+                  </div>
+                  <WarrantyStatusBadge status={applianceWarranty.status} />
+                </div>
+
+                <div className="mt-4 grid grid-cols-1 gap-3 text-sm sm:grid-cols-2">
+                  <div>
+                    <p className="text-stone-500">End date</p>
+                    <p className="mt-1 text-stone-800">{warrantyExpiration.expirationDateLabel}</p>
+                  </div>
+                  <div>
+                    <p className="text-stone-500">Expiration</p>
+                    <p className="mt-1 text-stone-800">
+                      {!warrantyExpiration.isValid
+                        ? "Expiration unavailable"
+                        : warrantyExpiration.daysRemaining !== null && warrantyExpiration.daysRemaining >= 0
+                          ? `${warrantyExpiration.daysRemaining} days remaining`
+                          : "Expired"}
+                    </p>
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => onViewWarranty(applianceWarranty.id)}
+                  className="mt-4 rounded-md text-sm font-medium text-[#1677B8] hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1677B8] focus-visible:ring-offset-2"
+                >
+                  View warranty details
+                </button>
+              </div>
+            ) : (
+              <WarrantyEmptyState
+                title="No warranty linked"
+                description="Warranty coverage for this appliance has not been added yet."
+                actionLabel="Add warranty"
+                onAction={onAddWarranty}
+              />
             )}
           </div>
   

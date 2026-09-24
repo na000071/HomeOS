@@ -1,11 +1,65 @@
 @import "tailwindcss";
 
+:root {
+  font-family: "Avenir Next", Avenir, "Segoe UI", sans-serif;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  color-scheme: light;
+}
+
 * {
   box-sizing: border-box;
 }
 
 body {
   margin: 0;
-  background: #f7f5f0;
+  min-width: 320px;
+  background:
+    radial-gradient(circle at 82% -10%, rgba(255, 255, 255, 0.82), transparent 32rem),
+    linear-gradient(135deg, #eaf7ff 0%, #cfeafa 48%, #b9def2 100%);
   color: #20211f;
+}
+
+button,
+select,
+input,
+textarea {
+  font: inherit;
+}
+
+::selection {
+  background: #b9dff2;
+  color: #20211f;
+}
+
+.homeos-gradient-text {
+  background: linear-gradient(135deg, #1677b8 0%, #39a9df 100%);
+  background-clip: text;
+  -webkit-background-clip: text;
+  color: transparent;
+}
+
+.homeos-primary-button {
+  background: linear-gradient(135deg, #1677b8 0%, #238dcc 52%, #39a9df 100%);
+  box-shadow: 0 10px 22px rgba(22, 119, 184, 0.2);
+}
+
+.homeos-primary-button:hover {
+  background: linear-gradient(135deg, #12659d 0%, #197db7 52%, #2b98ce 100%);
+  box-shadow: 0 13px 26px rgba(22, 119, 184, 0.28);
+}
+
+main h1 {
+  background: linear-gradient(135deg, #12679f 0%, #238dcc 55%, #39a9df 100%);
+  background-clip: text;
+  -webkit-background-clip: text;
+  color: transparent;
+}
+
+.bg-\[\#5E7563\] {
+  background: linear-gradient(135deg, #1677b8 0%, #238dcc 52%, #39a9df 100%);
+}
+
+.hover\:bg-\[\#4F6655\]:hover {
+  background: linear-gradient(135deg, #12659d 0%, #197db7 52%, #2b98ce 100%);
 }

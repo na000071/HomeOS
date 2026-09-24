@@ -236,6 +236,16 @@ function Appliances() {
               });
               setSelectedAppliance(null);
             }}
+            onViewWarranty={(warrantyId) => {
+              navigate("/warranties", { state: { warrantyId } });
+              setSelectedAppliance(null);
+            }}
+            onAddWarranty={() => {
+              navigate("/warranties", {
+                state: { applianceId: selectedAppliance.id },
+              });
+              setSelectedAppliance(null);
+            }}
           />
         )}
       </div>

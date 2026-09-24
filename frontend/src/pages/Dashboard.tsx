@@ -1,7 +1,10 @@
 import Card from "../components/Card";
+import WarrantyStatusBadge from "../components/WarrantyStatusBadge";
 import { overviewData } from "../data/dashboardData";
+import { getWarrantyDashboardData } from "../utils/warrantyDashboard";
 
 function Dashboard() {
+  const warrantyDashboard = getWarrantyDashboardData();
     return (
       <div>
         {/* Dashboard Header */}
@@ -150,93 +153,64 @@ function Dashboard() {
             </button>
             </div>
 
-            <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-3">
-            {/* Active Warranty */}
-            <div className="rounded-xl border border-stone-200 bg-white p-5">
-                <div className="flex items-start justify-between">
-                <div>
-                    <p className="text-sm text-stone-500">
-                    Refrigerator
-                    </p>
-
-                    <h3 className="mt-1 font-medium text-[#20211F]">
-                    Samsung
-                    </h3>
-                </div>
-
-                <span className="rounded-full bg-green-50 px-3 py-1 text-xs font-medium text-green-700">
-                    Active
-                </span>
-                </div>
-
-                <div className="mt-6">
-                <p className="text-xs text-stone-400">
-                    Warranty expires
-                </p>
-
-                <p className="mt-1 text-sm font-medium text-[#20211F]">
-                    March 18, 2028
-                </p>
-                </div>
+            <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+              {[
+                ["Total Warranties", warrantyDashboard.total, "All tracked warranties"],
+                ["Active", warrantyDashboard.active, "Current coverage"],
+                ["Expiring Soon", warrantyDashboard.expiringSoon, "Within 90 days"],
+                ["Expired", warrantyDashboard.expired, "No longer active"],
+              ].map(([label, value, description]) => (
+                <Card key={label} className="p-5">
+                  <p className="text-sm text-stone-500">{label}</p>
+                  <p className="mt-2 text-3xl font-semibold text-[#20211F]">{value}</p>
+                  <p className="mt-1 text-sm text-stone-500">{description}</p>
+                </Card>
+              ))}
             </div>
 
-            {/* Expiring Soon */}
-            <div className="rounded-xl border border-stone-200 bg-white p-5">
-                <div className="flex items-start justify-between">
+            <div className="mt-5 rounded-xl border border-stone-200 bg-white p-5">
+              <div className="flex items-center justify-between gap-4">
                 <div>
-                    <p className="text-sm text-stone-500">
-                    Washing Machine
-                    </p>
-
-                    <h3 className="mt-1 font-medium text-[#20211F]">
-                    LG
-                    </h3>
+                  <h3 className="text-lg font-semibold text-[#20211F]">Upcoming Warranties</h3>
+                  <p className="mt-1 text-sm text-stone-500">Coverage that needs attention soon.</p>
                 </div>
-
-                <span className="rounded-full bg-amber-50 px-3 py-1 text-xs font-medium text-amber-700">
-                    Expiring Soon
+                <span className="text-sm text-stone-500">
+                  {warrantyDashboard.recentlyExpiring.length} upcoming
                 </span>
-                </div>
+              </div>
 
-                <div className="mt-6">
-                <p className="text-xs text-stone-400">
-                    Warranty expires
+              {warrantyDashboard.recentlyExpiring.length > 0 ? (
+                <div className="mt-4 space-y-3">
+                  {warrantyDashboard.recentlyExpiring.map((warranty) => (
+                    <div
+                      key={warranty.id}
+                      className="flex flex-col gap-3 rounded-lg border border-stone-100 bg-stone-50 p-4 sm:flex-row sm:items-center sm:justify-between"
+                    >
+                      <div>
+                        <p className="font-medium text-[#20211F]">
+                          {warranty.applianceBrand} {warranty.applianceName}
+                        </p>
+                        <p className="mt-1 text-sm text-stone-500">{warranty.provider}</p>
+                      </div>
+                      <div className="flex items-center gap-3 sm:text-right">
+                        <div>
+                          <p className="text-sm font-medium text-amber-700">
+                            {warranty.daysRemaining} days remaining
+                          </p>
+                          <p className="mt-1 text-xs text-stone-500">
+                            Expires {warranty.expirationDateLabel}
+                          </p>
+                        </div>
+                        <WarrantyStatusBadge status={warranty.status} />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="mt-4 rounded-lg bg-stone-50 p-4 text-sm text-stone-500">
+                  No warranties need attention soon.
                 </p>
-
-                <p className="mt-1 text-sm font-medium text-[#20211F]">
-                    November 12, 2026
-                </p>
-                </div>
-            </div>
-
-            {/* Active Warranty */}
-            <div className="rounded-xl border border-stone-200 bg-white p-5">
-                <div className="flex items-start justify-between">
-                <div>
-                    <p className="text-sm text-stone-500">
-                    Dishwasher
-                    </p>
-
-                    <h3 className="mt-1 font-medium text-[#20211F]">
-                    Bosch
-                    </h3>
-                </div>
-
-                <span className="rounded-full bg-green-50 px-3 py-1 text-xs font-medium text-green-700">
-                    Active
-                </span>
-                </div>
-
-                <div className="mt-6">
-                <p className="text-xs text-stone-400">
-                    Warranty expires
-                </p>
-
-                <p className="mt-1 text-sm font-medium text-[#20211F]">
-                    July 4, 2029
-                </p>
-                </div>
-            </div>
+              )}
             </div>
         </section>
 
