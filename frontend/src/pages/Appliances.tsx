@@ -3,11 +3,13 @@ import AddApplianceForm from "../components/AddApplianceForm";
 import Button from "../components/Button";
 import { appliancesData } from "../data/appliancesData";
 import Card from "../components/Card";
+import ApplianceDetails from "../components/ApplianceDetails";
 
 
 function Appliances() {
     const [appliances, setAppliances] = useState(appliancesData);
     const [showForm, setShowForm] = useState(false);
+    const [selectedAppliance, setSelectedAppliance] = useState<any>(null);
     const handleAddAppliance = (appliance: typeof appliancesData[number]) => {
         setAppliances((currentAppliances) => [
           ...currentAppliances,
@@ -115,37 +117,11 @@ function Appliances() {
                         </p>
                         </div>
                     </div>
-
-                    <div className="mt-5 border-t border-stone-100 pt-4">
-                      <div className="grid grid-cols-2 gap-3 text-sm">
-                        <div>
-                          <p className="text-stone-400">Category</p>
-                          <p className="mt-1 text-stone-700">{appliance.category}</p>
-                        </div>
-
-                        <div>
-                          <p className="text-stone-400">Serial Number</p>
-                          <p className="mt-1 text-stone-700">
-                            {appliance.serialNumber}
-                          </p>
-                        </div>
-
-                        <div>
-                          <p className="text-stone-400">Purchase Price</p>
-                          <p className="mt-1 text-stone-700">
-                            ${appliance.purchasePrice}
-                          </p>
-                        </div>
-
-                        <div>
-                          <p className="text-stone-400">Notes</p>
-                          <p className="mt-1 text-stone-700">
-                            {appliance.notes || "No notes"}
-                          </p>
-                        </div>
-                      </div>
-
-                      <button className="mt-5 text-sm font-medium text-[#5E7563] hover:underline">
+                    <div>
+                      <button
+                        onClick={() => setSelectedAppliance(appliance)}
+                        className="mt-5 text-sm font-medium text-[#5E7563] hover:underline"
+                      >
                         View appliance →
                       </button>
                     </div>
@@ -159,6 +135,12 @@ function Appliances() {
                 onSave={handleAddAppliance}
             />
          )}
+        {selectedAppliance && (
+          <ApplianceDetails
+            appliance={selectedAppliance}
+            onClose={() => setSelectedAppliance(null)}
+          />
+        )}
       </div>
     );
   }
