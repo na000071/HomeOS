@@ -1,9 +1,10 @@
 import { useEffect, useState } from "react";
+import type { Appliance, ApplianceFormValues } from "../utils/applianceUtils";
 
 type EditApplianceFormProps = {
-  appliance: any;
+  appliance: Appliance;
   onClose: () => void;
-  onSave: (appliance: any) => void;
+  onSave: (appliance: ApplianceFormValues) => void;
 };
 
 function EditApplianceForm({ appliance, onClose, onSave }: EditApplianceFormProps) {

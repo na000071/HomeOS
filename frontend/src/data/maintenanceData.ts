@@ -1,42 +1,4 @@
-export const maintenanceData = [
-    {
-      id: 1,
-      title: "Change HVAC Filter",
-      room: "Whole Home",
-      frequency: "Every 3 Months",
-      dueDate: "September 25, 2026",
-      status: "Due Soon",
-    },
-    {
-      id: 2,
-      title: "Clean Dishwasher Filter",
-      room: "Kitchen",
-      frequency: "Monthly",
-      dueDate: "October 2, 2026",
-      status: "Upcoming",
-    },
-    {
-      id: 3,
-      title: "Replace Water Filter",
-      room: "Kitchen",
-      frequency: "Every 6 Months",
-      dueDate: "September 15, 2026",
-      status: "Overdue",
-    },
-    {
-      id: 4,
-      title: "Test Smoke Detectors",
-      room: "Whole Home",
-      frequency: "Yearly",
-      dueDate: "October 6, 2026",
-      status: "Upcoming",
-    },
-    {
-      id: 5,
-      title: "Clean Dryer Vent",
-      room: "Laundry",
-      frequency: "Yearly",
-      dueDate: "October 20, 2026",
-      status: "Upcoming",
-    },
-  ];
+import { maintenanceTasksData } from "./maintenanceTasksData";
+import type { MaintenanceTask } from "../types/maintenance";
+
+export const maintenanceData: MaintenanceTask[] = maintenanceTasksData;

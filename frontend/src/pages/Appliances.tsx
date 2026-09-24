@@ -5,15 +5,27 @@ import { appliancesData } from "../data/appliancesData";
 import Card from "../components/Card";
 import ApplianceDetails from "../components/ApplianceDetails";
 import EditApplianceForm from "../components/EditApplianceForm";
+import { useNavigate } from "react-router-dom";
+import {
+  filterAppliances,
+  type Appliance,
+  type ApplianceFormValues,
+} from "../utils/applianceUtils";
 
 
 function Appliances() {
+  const navigate = useNavigate();
     const [appliances, setAppliances] = useState(appliancesData);
     const [showForm, setShowForm] = useState(false);
-    const [selectedAppliance, setSelectedAppliance] = useState<any>(null);
-    const [editingAppliance, setEditingAppliance] = useState<any>(null);
+    const [selectedAppliance, setSelectedAppliance] = useState<Appliance | null>(null);
+    const [editingAppliance, setEditingAppliance] = useState<Appliance | null>(null);
+    const [filters, setFilters] = useState({
+      searchQuery: "",
+      room: "all",
+      category: "all",
+    });
 
-    const handleAddAppliance = (appliance: typeof appliancesData[number]) => {
+    const handleAddAppliance = (appliance: ApplianceFormValues) => {
         setAppliances((currentAppliances) => [
           ...currentAppliances,
           {
@@ -32,6 +44,12 @@ function Appliances() {
 
       setSelectedAppliance(null);
     };
+
+    const filteredAppliances = filterAppliances(appliances, filters);
+    const roomOptions = Array.from(new Set(appliances.map((appliance) => appliance.room))).sort();
+    const categoryOptions = Array.from(
+      new Set(appliances.map((appliance) => appliance.category)),
+    ).sort();
 
     return (
       <div>
@@ -59,29 +77,56 @@ function Appliances() {
           <input
             type="text"
             placeholder="Search appliances..."
+            value={filters.searchQuery}
+            onChange={(event) =>
+              setFilters((currentFilters) => ({
+                ...currentFilters,
+                searchQuery: event.target.value,
+              }))
+            }
+            aria-label="Search appliances"
             className="flex-1 rounded-lg border border-stone-200 bg-white px-4 py-3 text-sm outline-none transition placeholder:text-stone-400 focus:border-[#5E7563]"
           />
   
-          <select className="rounded-lg border border-stone-200 bg-white px-4 py-3 text-sm text-stone-600 outline-none focus:border-[#5E7563]">
-            <option>All Rooms</option>
-            <option>Kitchen</option>
-            <option>Bedroom</option>
-            <option>Living Room</option>
+          <select
+            value={filters.room}
+            onChange={(event) =>
+              setFilters((currentFilters) => ({
+                ...currentFilters,
+                room: event.target.value,
+              }))
+            }
+            aria-label="Filter appliances by room"
+            className="rounded-lg border border-stone-200 bg-white px-4 py-3 text-sm text-stone-600 outline-none focus:border-[#5E7563]"
+          >
+            <option value="all">All Rooms</option>
+            {roomOptions.map((room) => (
+              <option key={room} value={room}>{room}</option>
+            ))}
           </select>
   
-          <select className="rounded-lg border border-stone-200 bg-white px-4 py-3 text-sm text-stone-600 outline-none focus:border-[#5E7563]">
-            <option>All Categories</option>
-            <option>Kitchen</option>
-            <option>Cleaning</option>
-            <option>Climate</option>
-            <option>Entertainment</option>
+          <select
+            value={filters.category}
+            onChange={(event) =>
+              setFilters((currentFilters) => ({
+                ...currentFilters,
+                category: event.target.value,
+              }))
+            }
+            aria-label="Filter appliances by category"
+            className="rounded-lg border border-stone-200 bg-white px-4 py-3 text-sm text-stone-600 outline-none focus:border-[#5E7563]"
+          >
+            <option value="all">All Categories</option>
+            {categoryOptions.map((category) => (
+              <option key={category} value={category}>{category}</option>
+            ))}
           </select>
         </div>
   
         {/* Appliance Grid */}
         <section className="mt-6">
              <div className="mt-6 grid grid-cols-1 gap-4 lg:grid-cols-2">
-                {appliances.map((appliance) => (
+                {filteredAppliances.map((appliance) => (
                     <Card key={appliance.id} className="p-5">
                     <div className="flex items-start justify-between">
                         <div>
@@ -140,6 +185,14 @@ function Appliances() {
                     </Card>
                 ))}
             </div>
+            {filteredAppliances.length === 0 && (
+              <div className="mt-6 rounded-xl border border-dashed border-stone-300 p-8 text-center">
+                <p className="font-medium text-stone-700">No appliances found</p>
+                <p className="mt-1 text-sm text-stone-500">
+                  Try a different search term or clear one of the filters.
+                </p>
+              </div>
+            )}
         </section>
         {showForm && (
             <AddApplianceForm
@@ -174,6 +227,15 @@ function Appliances() {
               setSelectedAppliance(null);
             }}
             onDelete={() => handleDeleteAppliance(selectedAppliance.id)}
+            onAddMaintenance={() => {
+              navigate("/maintenance", {
+                state: {
+                  applianceId: selectedAppliance.id,
+                  room: selectedAppliance.room,
+                },
+              });
+              setSelectedAppliance(null);
+            }}
           />
         )}
       </div>

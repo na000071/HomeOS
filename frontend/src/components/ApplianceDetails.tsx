@@ -1,8 +1,14 @@
+import { maintenanceData } from "../data/maintenanceData";
+import { formatMaintenanceDate } from "../services/maintenanceDateService";
+import MaintenanceStatusBadge from "./MaintenanceStatusBadge";
+import type { Appliance } from "../utils/applianceUtils";
+
 type ApplianceDetailsProps = {
-    appliance: any;
+  appliance: Appliance;
     onClose: () => void;
     onEdit: () => void;
     onDelete: () => void;
+  onAddMaintenance: () => void;
   };
   
   function ApplianceDetails({
@@ -10,7 +16,12 @@ type ApplianceDetailsProps = {
     onClose,
     onEdit,
     onDelete,
+    onAddMaintenance,
   }: ApplianceDetailsProps) {
+    const maintenanceTasks = maintenanceData.filter(
+      (task) => task.applianceId === appliance.id,
+    );
+
     return (
       <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 p-6">
         <div className="w-full max-w-2xl rounded-2xl bg-white p-8 shadow-xl">
@@ -87,6 +98,55 @@ type ApplianceDetailsProps = {
             <p className="mt-1 text-stone-700">
               {appliance.notes || "No notes"}
             </p>
+          </div>
+
+          <div className="mt-8 border-t border-stone-100 pt-6">
+            <div className="flex items-center justify-between gap-4">
+              <div>
+                <p className="text-sm text-stone-400">Maintenance</p>
+                <h3 className="mt-1 text-lg font-semibold text-[#20211F]">
+                  Appliance maintenance
+                </h3>
+              </div>
+
+              <span className="text-sm text-stone-500">
+                {maintenanceTasks.length} {maintenanceTasks.length === 1 ? "task" : "tasks"}
+              </span>
+            </div>
+
+            {maintenanceTasks.length > 0 ? (
+              <div className="mt-4 space-y-3">
+                {maintenanceTasks.map((task) => (
+                  <div
+                    key={task.id}
+                    className="flex flex-col gap-3 rounded-xl border border-stone-200 bg-stone-50 p-4 sm:flex-row sm:items-center sm:justify-between"
+                  >
+                    <div>
+                      <p className="font-medium text-stone-800">{task.title}</p>
+                      <p className="mt-1 text-sm text-stone-500">
+                        Next due {formatMaintenanceDate(task.nextDueDate)} · {task.frequency}
+                      </p>
+                    </div>
+
+                    <MaintenanceStatusBadge status={task.status} />
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="mt-4 rounded-xl border border-dashed border-stone-300 bg-stone-50 p-5">
+                <p className="font-medium text-stone-700">No maintenance tasks yet</p>
+                <p className="mt-1 text-sm text-stone-500">
+                  Add a routine to keep this appliance in good working order.
+                </p>
+                <button
+                  type="button"
+                  onClick={onAddMaintenance}
+                  className="mt-4 rounded-lg bg-[#5E7563] px-4 py-2.5 text-sm font-medium text-white transition hover:bg-[#4F6655]"
+                >
+                  Add maintenance task
+                </button>
+              </div>
+            )}
           </div>
   
           <div className="mt-8 flex justify-end gap-3">
