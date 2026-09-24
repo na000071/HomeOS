@@ -25,6 +25,14 @@ function Appliances() {
         setShowForm(false);
       };
 
+    const handleDeleteAppliance = (applianceId: number) => {
+      setAppliances((currentAppliances) =>
+        currentAppliances.filter((currentAppliance) => currentAppliance.id !== applianceId)
+      );
+
+      setSelectedAppliance(null);
+    };
+
     return (
       <div>
         {/* Page Header */}
@@ -165,6 +173,7 @@ function Appliances() {
               setEditingAppliance(selectedAppliance);
               setSelectedAppliance(null);
             }}
+            onDelete={() => handleDeleteAppliance(selectedAppliance.id)}
           />
         )}
       </div>
