@@ -1,20 +1,48 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 type AddApplianceFormProps = {
     onClose: () => void;
     onSave: (appliance: any) => void;
+    initialAppliance?: any;
   };
   
-  function AddApplianceForm({ onClose, onSave }: AddApplianceFormProps) {
-    const [name, setName] = useState("");
-    const [brand, setBrand] = useState("");
-    const [model, setModel] = useState("");
-    const [room, setRoom] = useState("");
-    const [purchaseDate, setPurchaseDate] = useState("");
-    const [category, setCategory] = useState("");
-    const [serialNumber, setSerialNumber] = useState("");
-    const [purchasePrice, setPurchasePrice] = useState("");
-    const [notes, setNotes] = useState("");
+  function AddApplianceForm({ onClose, onSave, initialAppliance }: AddApplianceFormProps) {
+    const isEditing = Boolean(initialAppliance);
+
+    const [name, setName] = useState(initialAppliance?.name ?? "");
+    const [brand, setBrand] = useState(initialAppliance?.brand ?? "");
+    const [model, setModel] = useState(initialAppliance?.model ?? "");
+    const [room, setRoom] = useState(initialAppliance?.room ?? "");
+    const [purchaseDate, setPurchaseDate] = useState(initialAppliance?.purchaseDate ?? "");
+    const [category, setCategory] = useState(initialAppliance?.category ?? "");
+    const [serialNumber, setSerialNumber] = useState(initialAppliance?.serialNumber ?? "");
+    const [purchasePrice, setPurchasePrice] = useState(initialAppliance?.purchasePrice ?? "");
+    const [notes, setNotes] = useState(initialAppliance?.notes ?? "");
+
+    useEffect(() => {
+      if (!initialAppliance) {
+        setName("");
+        setBrand("");
+        setModel("");
+        setRoom("");
+        setPurchaseDate("");
+        setCategory("");
+        setSerialNumber("");
+        setPurchasePrice("");
+        setNotes("");
+        return;
+      }
+
+      setName(initialAppliance.name ?? "");
+      setBrand(initialAppliance.brand ?? "");
+      setModel(initialAppliance.model ?? "");
+      setRoom(initialAppliance.room ?? "");
+      setPurchaseDate(initialAppliance.purchaseDate ?? "");
+      setCategory(initialAppliance.category ?? "");
+      setSerialNumber(initialAppliance.serialNumber ?? "");
+      setPurchasePrice(initialAppliance.purchasePrice ?? "");
+      setNotes(initialAppliance.notes ?? "");
+    }, [initialAppliance]);
     return (
       <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 p-4">
         <div className="w-full max-w-2xl rounded-xl bg-white p-6 shadow-xl">
@@ -26,11 +54,11 @@ type AddApplianceFormProps = {
               </p>
   
               <h2 className="mt-1 text-2xl font-semibold text-[#20211F]">
-                Add Appliance
+                {isEditing ? "Edit Appliance" : "Add Appliance"}
               </h2>
   
               <p className="mt-2 text-sm text-stone-500">
-                Add an appliance to your home inventory.
+                {isEditing ? "Update appliance details." : "Add an appliance to your home inventory."}
               </p>
             </div>
   
@@ -49,10 +77,11 @@ type AddApplianceFormProps = {
                     event.preventDefault();
 
                     onSave({
+                      ...(initialAppliance ? { id: initialAppliance.id } : {}),
                       name,
                       brand,
                       room,
-                      warranty: "No Warranty",
+                      warranty: initialAppliance?.warranty ?? "No Warranty",
                       model,
                       purchaseDate,
                       category,
@@ -214,7 +243,7 @@ type AddApplianceFormProps = {
                 type="submit"
                 className="rounded-lg bg-[#5E7563] px-5 py-3 text-sm font-medium text-white hover:bg-[#4F6655]"
               >
-                Save Appliance
+                {isEditing ? "Save Changes" : "Save Appliance"}
               </button>
             </div>
           </form>

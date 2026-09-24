@@ -4,12 +4,15 @@ import Button from "../components/Button";
 import { appliancesData } from "../data/appliancesData";
 import Card from "../components/Card";
 import ApplianceDetails from "../components/ApplianceDetails";
+import EditApplianceForm from "../components/EditApplianceForm";
 
 
 function Appliances() {
     const [appliances, setAppliances] = useState(appliancesData);
     const [showForm, setShowForm] = useState(false);
     const [selectedAppliance, setSelectedAppliance] = useState<any>(null);
+    const [editingAppliance, setEditingAppliance] = useState<any>(null);
+
     const handleAddAppliance = (appliance: typeof appliancesData[number]) => {
         setAppliances((currentAppliances) => [
           ...currentAppliances,
@@ -21,6 +24,7 @@ function Appliances() {
     
         setShowForm(false);
       };
+
     return (
       <div>
         {/* Page Header */}
@@ -135,10 +139,32 @@ function Appliances() {
                 onSave={handleAddAppliance}
             />
          )}
+
+        {editingAppliance && (
+          <EditApplianceForm
+            appliance={editingAppliance}
+            onClose={() => setEditingAppliance(null)}
+            onSave={(updatedAppliance) => {
+              setAppliances((currentAppliances) =>
+                currentAppliances.map((currentAppliance) =>
+                  currentAppliance.id === editingAppliance.id
+                    ? { ...currentAppliance, ...updatedAppliance }
+                    : currentAppliance
+                )
+              );
+
+              setEditingAppliance(null);
+            }}
+          />
+        )}
         {selectedAppliance && (
           <ApplianceDetails
             appliance={selectedAppliance}
             onClose={() => setSelectedAppliance(null)}
+            onEdit={() => {
+              setEditingAppliance(selectedAppliance);
+              setSelectedAppliance(null);
+            }}
           />
         )}
       </div>

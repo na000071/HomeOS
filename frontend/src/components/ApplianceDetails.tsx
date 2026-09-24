@@ -1,11 +1,13 @@
 type ApplianceDetailsProps = {
     appliance: any;
     onClose: () => void;
+    onEdit: () => void;
   };
   
   function ApplianceDetails({
     appliance,
     onClose,
+    onEdit,
   }: ApplianceDetailsProps) {
     return (
       <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 p-6">
@@ -85,7 +87,14 @@ type ApplianceDetailsProps = {
             </p>
           </div>
   
-          <div className="mt-8 flex justify-end">
+          <div className="mt-8 flex justify-end gap-3">
+            <button
+              onClick={onEdit}
+              className="rounded-lg border border-[#5E7563] bg-white px-5 py-3 text-sm font-medium text-[#5E7563] hover:bg-[#F2F6F2]"
+            >
+              Edit
+            </button>
+
             <button
               onClick={onClose}
               className="rounded-lg bg-[#5E7563] px-5 py-3 text-sm font-medium text-white hover:bg-[#4F6655]"
