@@ -1,10 +1,20 @@
 import Card from "../components/Card";
 import WarrantyStatusBadge from "../components/WarrantyStatusBadge";
-import { overviewData } from "../data/dashboardData";
+import { useHomeData } from "../context/useHomeData";
+import { getMaintenanceDashboardData } from "../utils/maintenanceDashboard";
+import { getExpenseDashboardData } from "../utils/expenseDashboard";
 import { getWarrantyDashboardData } from "../utils/warrantyDashboard";
 
+const currencyFormatter = new Intl.NumberFormat("en-US", {
+  style: "currency",
+  currency: "USD",
+});
+
 function Dashboard() {
-  const warrantyDashboard = getWarrantyDashboardData();
+  const { appliances, maintenanceTasks, warranties, expenses } = useHomeData();
+  const warrantyDashboard = getWarrantyDashboardData(warranties);
+  const maintenanceDashboard = getMaintenanceDashboardData(maintenanceTasks);
+  const expenseDashboard = getExpenseDashboardData(expenses);
     return (
       <div>
         {/* Dashboard Header */}
@@ -28,21 +38,18 @@ function Dashboard() {
   
         {/* Overview Cards */}
         <div className="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            {overviewData.map((item) => (
-                <Card key={item.title} className="p-5">
-                <p className="text-sm text-stone-500">
-                    {item.title}
-                </p>
-
-                <p className="mt-2 text-3xl font-semibold text-[#20211F]">
-                    {item.value}
-                </p>
-
-                <p className="mt-1 text-sm text-stone-500">
-                    {item.description}
-                </p>
-                </Card>
-            ))}
+          {[
+            ["Appliances", appliances.length, "Total appliances"],
+            ["Maintenance", maintenanceDashboard.total, "Total maintenance tasks"],
+            ["Warranties", warrantyDashboard.total, "Total warranties"],
+            ["Expenses", `$${expenseDashboard.total.toFixed(2)}`, "Tracked expenses"],
+          ].map(([title, value, description]) => (
+            <Card key={title} className="p-5">
+              <p className="text-sm text-stone-500">{title}</p>
+              <p className="mt-2 text-3xl font-semibold text-[#20211F]">{value}</p>
+              <p className="mt-1 text-sm text-stone-500">{description}</p>
+            </Card>
+          ))}
         </div>
   
         {/* Upcoming Maintenance */}
@@ -54,7 +61,7 @@ function Dashboard() {
               </h2>
   
               <p className="mt-1 text-sm text-stone-500">
-                Stay ahead of important tasks around your home.
+                {maintenanceDashboard.upcoming} upcoming · {maintenanceDashboard.overdue} overdue
               </p>
             </div>
   
@@ -64,74 +71,24 @@ function Dashboard() {
           </div>
   
           <div className="mt-4 overflow-hidden rounded-xl border border-stone-200 bg-white">
-            {/* Maintenance Item */}
-            <div className="flex items-center justify-between border-b border-stone-100 p-5">
-              <div>
-                <h3 className="font-medium text-[#20211F]">
-                  Change HVAC filter
-                </h3>
-  
-                <p className="mt-1 text-sm text-stone-500">
-                  Heating & Cooling
-                </p>
+            {maintenanceDashboard.upcomingTasks.slice(0, 3).map((task, index) => (
+              <div
+                key={task.id}
+                className={`flex items-center justify-between gap-4 p-5 ${index < Math.min(maintenanceDashboard.upcomingTasks.length, 3) - 1 ? "border-b border-stone-100" : ""}`}
+              >
+                <div className="min-w-0">
+                  <h3 className="truncate font-medium text-[#20211F]">{task.title}</h3>
+                  <p className="mt-1 text-sm text-stone-500">{task.room}</p>
+                </div>
+                <div className="shrink-0 text-right">
+                  <p className="text-sm font-medium text-stone-600">{task.status}</p>
+                  <p className="mt-1 text-xs text-stone-400">{task.dueDate}</p>
+                </div>
               </div>
-  
-              <div className="text-right">
-                <p className="text-sm font-medium text-amber-600">
-                  Due in 3 days
-                </p>
-  
-                <p className="mt-1 text-xs text-stone-400">
-                  Sep 25, 2026
-                </p>
-              </div>
-            </div>
-  
-            {/* Maintenance Item */}
-            <div className="flex items-center justify-between border-b border-stone-100 p-5">
-              <div>
-                <h3 className="font-medium text-[#20211F]">
-                  Clean dishwasher filter
-                </h3>
-  
-                <p className="mt-1 text-sm text-stone-500">
-                  Kitchen
-                </p>
-              </div>
-  
-              <div className="text-right">
-                <p className="text-sm font-medium text-stone-600">
-                  Due in 10 days
-                </p>
-  
-                <p className="mt-1 text-xs text-stone-400">
-                  Oct 2, 2026
-                </p>
-              </div>
-            </div>
-  
-            {/* Maintenance Item */}
-            <div className="flex items-center justify-between p-5">
-              <div>
-                <h3 className="font-medium text-[#20211F]">
-                  Test smoke detectors
-                </h3>
-  
-                <p className="mt-1 text-sm text-stone-500">
-                  Whole Home
-                </p>
-              </div>
-  
-              <div className="text-right">
-                <p className="text-sm font-medium text-stone-600">
-                  Due in 14 days
-                </p>
-  
-                <p className="mt-1 text-xs text-stone-400">
-                  Oct 6, 2026
-                </p>
-              </div>
-            </div>
+            ))}
+            {maintenanceDashboard.upcomingTasks.length === 0 && (
+              <p className="p-5 text-sm text-stone-500">No upcoming maintenance tasks.</p>
+            )}
           </div>
         </section>
 
@@ -232,96 +189,53 @@ function Dashboard() {
             </button>
             </div>
 
-            <div className="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-3">
-            {/* Total Expenses */}
-            <div className="rounded-xl border border-stone-200 bg-white p-6">
-                <p className="text-sm text-stone-500">
-                This Month
-                </p>
-
-                <p className="mt-3 text-3xl font-semibold text-[#20211F]">
-                $428.50
-                </p>
-
-                <p className="mt-2 text-sm text-stone-500">
-                Home-related expenses
-                </p>
+            <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-3">
+              {[
+                ["Total Expenses", expenseDashboard.total],
+                ["This Month", expenseDashboard.thisMonth],
+                ["This Year", expenseDashboard.thisYear],
+              ].map(([label, amount]) => (
+                <Card key={label} className="p-5">
+                  <p className="text-sm text-stone-500">{label}</p>
+                  <p className="mt-3 text-3xl font-semibold text-[#20211F]">
+                    {currencyFormatter.format(amount as number)}
+                  </p>
+                </Card>
+              ))}
             </div>
 
-            {/* Expense Breakdown */}
-            <div className="rounded-xl border border-stone-200 bg-white p-6 lg:col-span-2">
-                <div className="flex items-center justify-between">
-                <h3 className="font-medium text-[#20211F]">
-                    Spending Breakdown
-                </h3>
-
-                <span className="text-xs text-stone-400">
-                    September 2026
-                </span>
+            <div className="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-2">
+              <div className="rounded-xl border border-stone-200 bg-white p-6">
+                <h3 className="font-medium text-[#20211F]">Recent Expenses</h3>
+                <div className="mt-4 space-y-3">
+                  {expenseDashboard.recentExpenses.length > 0 ? expenseDashboard.recentExpenses.map((expense) => (
+                    <div key={expense.id} className="flex items-center justify-between gap-4 border-b border-stone-100 pb-3 last:border-0 last:pb-0">
+                      <div className="min-w-0">
+                        <p className="truncate text-sm font-medium text-[#20211F]">{expense.description}</p>
+                        <p className="mt-1 text-xs text-stone-500">{expense.category} · {expense.date}</p>
+                      </div>
+                      <p className="shrink-0 text-sm font-medium text-stone-800">{currencyFormatter.format(expense.amount)}</p>
+                    </div>
+                  )) : <p className="text-sm text-stone-500">No expenses recorded yet.</p>}
                 </div>
+              </div>
 
-                <div className="mt-6 space-y-5">
-                {/* Utilities */}
-                <div>
-                    <div className="mb-2 flex justify-between text-sm">
-                    <span className="text-stone-600">
-                        Utilities
-                    </span>
-
-                    <span className="font-medium text-[#20211F]">
-                        $180
-                    </span>
+              <div className="rounded-xl border border-stone-200 bg-white p-6">
+                <h3 className="font-medium text-[#20211F]">Top Expense Categories</h3>
+                <div className="mt-4 space-y-4">
+                  {expenseDashboard.topCategories.length > 0 ? expenseDashboard.topCategories.map((category) => (
+                    <div key={category.category}>
+                      <div className="mb-2 flex justify-between text-sm">
+                        <span className="text-stone-600">{category.category} · {category.count}</span>
+                        <span className="font-medium text-[#20211F]">{currencyFormatter.format(category.amount)}</span>
+                      </div>
+                      <div className="h-2 rounded-full bg-stone-100">
+                        <div className="h-2 rounded-full bg-[#5E7563]" style={{ width: `${expenseDashboard.byCategory.find((item) => item.category === category.category)?.percentage ?? 0}%` }} />
+                      </div>
                     </div>
-
-                    <div className="h-2 rounded-full bg-stone-100">
-                    <div
-                        className="h-2 rounded-full bg-[#5E7563]"
-                        style={{ width: "70%" }}
-                    />
-                    </div>
+                  )) : <p className="text-sm text-stone-500">No expense categories yet.</p>}
                 </div>
-
-                {/* Maintenance */}
-                <div>
-                    <div className="mb-2 flex justify-between text-sm">
-                    <span className="text-stone-600">
-                        Maintenance
-                    </span>
-
-                    <span className="font-medium text-[#20211F]">
-                        $148.50
-                    </span>
-                    </div>
-
-                    <div className="h-2 rounded-full bg-stone-100">
-                    <div
-                        className="h-2 rounded-full bg-[#5E7563]"
-                        style={{ width: "55%" }}
-                    />
-                    </div>
-                </div>
-
-                {/* Internet */}
-                <div>
-                    <div className="mb-2 flex justify-between text-sm">
-                    <span className="text-stone-600">
-                        Internet
-                    </span>
-
-                    <span className="font-medium text-[#20211F]">
-                        $100
-                    </span>
-                    </div>
-
-                    <div className="h-2 rounded-full bg-stone-100">
-                    <div
-                        className="h-2 rounded-full bg-[#5E7563]"
-                        style={{ width: "35%" }}
-                    />
-                    </div>
-                </div>
-                </div>
-            </div>
+              </div>
             </div>
         </section>
         {/* Documents and Reminders */}
@@ -417,56 +331,33 @@ function Dashboard() {
             </div>
 
             <div className="mt-4 space-y-3">
-                {/* Reminder 1 */}
-                <div className="rounded-xl border border-stone-200 bg-white p-5">
-                <div className="flex items-start gap-4">
-                    <div className="mt-1 h-2.5 w-2.5 rounded-full bg-amber-500" />
-
+              {[
+                ...warrantyDashboard.recentlyExpiring.slice(0, 2).map((warranty) => ({
+                  title: `${warranty.applianceName} warranty expires`,
+                  date: warranty.expirationDateLabel,
+                  tone: "bg-amber-500",
+                })),
+                ...maintenanceDashboard.upcomingTasks.slice(0, 2).map((task) => ({
+                  title: task.title,
+                  date: task.dueDate,
+                  tone: "bg-[#5E7563]",
+                })),
+              ].slice(0, 3).map((reminder) => (
+                <div key={`${reminder.title}-${reminder.date}`} className="rounded-xl border border-stone-200 bg-white p-5">
+                  <div className="flex items-start gap-4">
+                    <div className={`mt-1 h-2.5 w-2.5 rounded-full ${reminder.tone}`} />
                     <div>
-                    <h3 className="font-medium text-[#20211F]">
-                        Washing machine warranty expires
-                    </h3>
-
-                    <p className="mt-1 text-sm text-stone-500">
-                        November 12, 2026
-                    </p>
+                      <h3 className="font-medium text-[#20211F]">{reminder.title}</h3>
+                      <p className="mt-1 text-sm text-stone-500">{reminder.date}</p>
                     </div>
+                  </div>
                 </div>
-                </div>
-
-                {/* Reminder 2 */}
-                <div className="rounded-xl border border-stone-200 bg-white p-5">
-                <div className="flex items-start gap-4">
-                    <div className="mt-1 h-2.5 w-2.5 rounded-full bg-[#5E7563]" />
-
-                    <div>
-                    <h3 className="font-medium text-[#20211F]">
-                        Replace HVAC filter
-                    </h3>
-
-                    <p className="mt-1 text-sm text-stone-500">
-                        September 25, 2026
-                    </p>
-                    </div>
-                </div>
-                </div>
-
-                {/* Reminder 3 */}
-                <div className="rounded-xl border border-stone-200 bg-white p-5">
-                <div className="flex items-start gap-4">
-                    <div className="mt-1 h-2.5 w-2.5 rounded-full bg-[#5E7563]" />
-
-                    <div>
-                    <h3 className="font-medium text-[#20211F]">
-                        Home insurance renewal
-                    </h3>
-
-                    <p className="mt-1 text-sm text-stone-500">
-                        December 1, 2026
-                    </p>
-                    </div>
-                </div>
-                </div>
+              ))}
+              {warrantyDashboard.recentlyExpiring.length === 0 && maintenanceDashboard.upcomingTasks.length === 0 && (
+                <p className="rounded-xl border border-dashed border-stone-300 p-5 text-sm text-stone-500">
+                  No upcoming reminders.
+                </p>
+              )}
             </div>
             </div>
         </section>

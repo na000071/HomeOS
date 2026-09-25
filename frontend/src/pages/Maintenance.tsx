@@ -7,13 +7,12 @@ import MaintenanceDetails from "../components/MaintenanceDetails";
 import MaintenanceEmptyState from "../components/MaintenanceEmptyState";
 import MaintenanceSummaryCard from "../components/MaintenanceSummaryCard";
 import MaintenanceTaskCard from "../components/MaintenanceTaskCard";
-import { maintenanceData } from "../data/maintenanceData";
+import { useHomeData } from "../context/useHomeData";
 import {
   completeMaintenanceTask,
   createMaintenanceTask,
   updateMaintenanceTaskSchedule,
 } from "../services/maintenanceDateService";
-import { appliancesData } from "../data/appliancesData";
 import {
   maintenanceFrequencies,
   maintenancePriorities,
@@ -27,12 +26,12 @@ import {
 } from "../utils/maintenanceTaskFilters.ts";
 
 function Maintenance() {
+  const { maintenanceTasks: tasks, setMaintenanceTasks: setTasks, appliances } = useHomeData();
   const location = useLocation();
   const maintenanceNavigationState = location.state as {
     applianceId?: number;
     room?: string;
   } | null;
-  const [tasks, setTasks] = useState<MaintenanceTask[]>(maintenanceData);
   const [isFormOpen, setIsFormOpen] = useState(
     Boolean(maintenanceNavigationState?.applianceId),
   );
@@ -217,7 +216,7 @@ function Maintenance() {
               aria-label="Filter tasks by appliance"
             >
               <option value="all">All Appliances</option>
-              {appliancesData.map((appliance) => (
+              {appliances.map((appliance) => (
                 <option key={appliance.id} value={appliance.id}>
                   {appliance.name} · {appliance.brand}
                 </option>

@@ -7,7 +7,7 @@ import WarrantyDetails from "../components/WarrantyDetails";
 import WarrantyEmptyState from "../components/WarrantyEmptyState.tsx";
 import WarrantySummaryCard from "../components/WarrantySummaryCard";
 import EditWarrantyForm from "../components/EditWarrantyForm";
-import { warrantiesData } from "../data/warrantiesData";
+import { useHomeData } from "../context/useHomeData";
 import {
   createWarranty,
   withCalculatedWarrantyStatus,
@@ -23,14 +23,14 @@ import {
 
 function Warranties() {
   const location = useLocation();
+  const { warranties, setWarranties } = useHomeData();
   const warrantyNavigationState = location.state as {
     warrantyId?: number;
     applianceId?: number;
   } | null;
     const initialWarranty = warrantyNavigationState?.warrantyId
-      ? warrantiesData.find((warranty) => warranty.id === warrantyNavigationState.warrantyId)
+      ? warranties.find((warranty) => warranty.id === warrantyNavigationState.warrantyId)
       : undefined;
-    const [warranties, setWarranties] = useState<Warranty[]>(warrantiesData);
     const [isFormOpen, setIsFormOpen] = useState(Boolean(warrantyNavigationState?.applianceId));
     const [selectedWarranty, setSelectedWarranty] = useState<Warranty | null>(
       initialWarranty ? withCalculatedWarrantyStatus(initialWarranty) : null,

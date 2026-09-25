@@ -1,37 +1,55 @@
-export const expensesData = [
-    {
-      id: 1,
-      name: "Electricity Bill",
-      category: "Utilities",
-      date: "September 20, 2026",
-      amount: 180.0,
-    },
-    {
-      id: 2,
-      name: "HVAC Filter Replacement",
-      category: "Maintenance",
-      date: "September 18, 2026",
-      amount: 48.5,
-    },
-    {
-      id: 3,
-      name: "Internet Bill",
-      category: "Internet",
-      date: "September 15, 2026",
-      amount: 100.0,
-    },
-    {
-      id: 4,
-      name: "Plumbing Repair",
-      category: "Maintenance",
-      date: "September 8, 2026",
-      amount: 75.0,
-    },
-    {
-      id: 5,
-      name: "Home Insurance",
-      category: "Insurance",
-      date: "September 2, 2026",
-      amount: 25.0,
-    },
-  ];
+import type { Expense } from "../types/expense";
+
+export const expensesData: Expense[] = [
+  {
+    id: 1,
+    category: "Utilities",
+    description: "Electricity bill",
+    amount: 180.0,
+    date: "2026-09-20",
+    notes: "Monthly household electricity service.",
+  },
+  {
+    id: 2,
+    category: "Maintenance",
+    description: "HVAC filter replacement",
+    amount: 48.5,
+    date: "2026-09-18",
+    maintenanceTaskId: 1,
+    notes: "Filter replaced during scheduled HVAC maintenance.",
+  },
+  {
+    id: 3,
+    category: "Internet",
+    description: "Internet bill",
+    amount: 100.0,
+    date: "2026-09-15",
+    notes: "Monthly broadband service.",
+  },
+  {
+    id: 4,
+    category: "Repair",
+    description: "Plumbing repair",
+    amount: 75.0,
+    date: "2026-09-08",
+    notes: "Kitchen sink drain repair.",
+  },
+  {
+    id: 5,
+    category: "Insurance",
+    description: "Home insurance premium",
+    amount: 25.0,
+    date: "2026-09-02",
+    notes: "Monthly home insurance payment.",
+  },
+  {
+    id: 6,
+    category: "Appliance",
+    description: "Refrigerator water filter",
+    amount: 32.99,
+    date: "2026-08-28",
+    applianceId: 1,
+    maintenanceTaskId: 3,
+    notes: "Replacement filter for the Samsung refrigerator.",
+  },
+];

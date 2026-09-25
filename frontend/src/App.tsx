@@ -1,5 +1,6 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Sidebar from "./components/Sidebar";
+import { HomeDataProvider } from "./context/HomeDataProvider";
 
 import Dashboard from "./pages/Dashboard";
 import Welcome from "./pages/Welcome";
@@ -14,8 +15,9 @@ import Reminders from "./pages/Reminders";
 function App() {
   return (
     <BrowserRouter>
-      <div className="flex min-h-screen flex-col bg-transparent md:flex-row">
-        <Sidebar />
+      <HomeDataProvider>
+        <div className="flex min-h-screen flex-col bg-transparent md:flex-row">
+          <Sidebar />
 
         <main className="min-w-0 flex-1 p-4 sm:p-6 lg:p-8">
           <Routes>
@@ -30,7 +32,8 @@ function App() {
             <Route path="/reminders" element={<Reminders />} />
           </Routes>
         </main>
-      </div>
+        </div>
+      </HomeDataProvider>
     </BrowserRouter>
   );
 }

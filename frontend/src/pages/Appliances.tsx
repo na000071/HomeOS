@@ -1,7 +1,6 @@
 import { useState } from "react";
 import AddApplianceForm from "../components/AddApplianceForm";
 import Button from "../components/Button";
-import { appliancesData } from "../data/appliancesData";
 import Card from "../components/Card";
 import ApplianceDetails from "../components/ApplianceDetails";
 import EditApplianceForm from "../components/EditApplianceForm";
@@ -11,11 +10,12 @@ import {
   type Appliance,
   type ApplianceFormValues,
 } from "../utils/applianceUtils";
+import { useHomeData } from "../context/useHomeData";
 
 
 function Appliances() {
   const navigate = useNavigate();
-    const [appliances, setAppliances] = useState(appliancesData);
+    const { appliances, setAppliances } = useHomeData();
     const [showForm, setShowForm] = useState(false);
     const [selectedAppliance, setSelectedAppliance] = useState<Appliance | null>(null);
     const [editingAppliance, setEditingAppliance] = useState<Appliance | null>(null);
