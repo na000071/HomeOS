@@ -4,6 +4,7 @@ import { useHomeData } from "../context/useHomeData";
 import { getMaintenanceDashboardData } from "../utils/maintenanceDashboard";
 import { getExpenseDashboardData } from "../utils/expenseDashboard";
 import { getWarrantyDashboardData } from "../utils/warrantyDashboard";
+import { sortDocuments } from "../utils/documentSorting";
 
 const currencyFormatter = new Intl.NumberFormat("en-US", {
   style: "currency",
@@ -11,10 +12,11 @@ const currencyFormatter = new Intl.NumberFormat("en-US", {
 });
 
 function Dashboard() {
-  const { appliances, maintenanceTasks, warranties, expenses } = useHomeData();
+  const { appliances, maintenanceTasks, warranties, expenses, documents } = useHomeData();
   const warrantyDashboard = getWarrantyDashboardData(warranties);
   const maintenanceDashboard = getMaintenanceDashboardData(maintenanceTasks);
   const expenseDashboard = getExpenseDashboardData(expenses);
+  const recentDocuments = sortDocuments(documents, "newest").slice(0, 3);
     return (
       <div>
         {/* Dashboard Header */}
@@ -259,56 +261,17 @@ function Dashboard() {
             </div>
 
             <div className="mt-4 rounded-xl border border-stone-200 bg-white">
-                {/* Document 1 */}
-                <div className="flex items-center justify-between border-b border-stone-100 p-5">
-                <div>
-                    <h3 className="font-medium text-[#20211F]">
-                    Refrigerator Receipt
-                    </h3>
-
-                    <p className="mt-1 text-xs text-stone-400">
-                    Added Sep 18, 2026
-                    </p>
+              {recentDocuments.length > 0 ? recentDocuments.map((document, index) => (
+                <div key={document.id} className={`flex items-center justify-between p-5 ${index < recentDocuments.length - 1 ? "border-b border-stone-100" : ""}`}>
+                  <div>
+                    <h3 className="font-medium text-[#20211F]">{document.name}</h3>
+                    <p className="mt-1 text-xs text-stone-400">Added {document.dateAdded}</p>
+                  </div>
+                  <span className="rounded-md bg-stone-100 px-3 py-1 text-xs text-stone-600">{document.category}</span>
                 </div>
-
-                <span className="rounded-md bg-stone-100 px-3 py-1 text-xs text-stone-600">
-                    Receipt
-                </span>
-                </div>
-
-                {/* Document 2 */}
-                <div className="flex items-center justify-between border-b border-stone-100 p-5">
-                <div>
-                    <h3 className="font-medium text-[#20211F]">
-                    Dishwasher Warranty
-                    </h3>
-
-                    <p className="mt-1 text-xs text-stone-400">
-                    Added Sep 15, 2026
-                    </p>
-                </div>
-
-                <span className="rounded-md bg-stone-100 px-3 py-1 text-xs text-stone-600">
-                    Warranty
-                </span>
-                </div>
-
-                {/* Document 3 */}
-                <div className="flex items-center justify-between p-5">
-                <div>
-                    <h3 className="font-medium text-[#20211F]">
-                    Home Insurance
-                    </h3>
-
-                    <p className="mt-1 text-xs text-stone-400">
-                    Added Sep 10, 2026
-                    </p>
-                </div>
-
-                <span className="rounded-md bg-stone-100 px-3 py-1 text-xs text-stone-600">
-                    Insurance
-                </span>
-                </div>
+              )) : (
+                <p className="p-5 text-sm text-stone-500">No documents have been added yet.</p>
+              )}
             </div>
             </div>
 
