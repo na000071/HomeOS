@@ -1,6 +1,8 @@
 import { appliancesData } from "../data/appliancesData";
 
-export type Appliance = (typeof appliancesData)[number];
+export type Appliance = Omit<(typeof appliancesData)[number], "roomId"> & {
+  roomId?: string;
+};
 export type ApplianceSummary = Pick<Appliance, "id" | "name" | "brand">;
 export type ApplianceFormValues = Omit<Appliance, "id"> & { id?: number };
 

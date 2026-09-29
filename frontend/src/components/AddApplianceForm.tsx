@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { roomsData } from "../data/roomsData";
 import type { Appliance, ApplianceFormValues } from "../utils/applianceUtils";
 
 type AddApplianceFormProps = {
@@ -6,6 +7,11 @@ type AddApplianceFormProps = {
   onSave: (appliance: ApplianceFormValues) => void;
   initialAppliance?: Appliance;
   };
+
+const getInitialRoomId = (appliance?: Appliance): string => {
+  if (appliance?.roomId) return appliance.roomId;
+  return roomsData.find((room) => room.name === appliance?.room)?.id.toString() ?? "";
+};
   
   function AddApplianceForm({ onClose, onSave, initialAppliance }: AddApplianceFormProps) {
     const isEditing = Boolean(initialAppliance);
@@ -14,6 +20,7 @@ type AddApplianceFormProps = {
     const [brand, setBrand] = useState(initialAppliance?.brand ?? "");
     const [model, setModel] = useState(initialAppliance?.model ?? "");
     const [room, setRoom] = useState(initialAppliance?.room ?? "");
+    const [roomId, setRoomId] = useState(getInitialRoomId(initialAppliance));
     const [purchaseDate, setPurchaseDate] = useState(initialAppliance?.purchaseDate ?? "");
     const [category, setCategory] = useState(initialAppliance?.category ?? "");
     const [serialNumber, setSerialNumber] = useState(initialAppliance?.serialNumber ?? "");
@@ -26,6 +33,7 @@ type AddApplianceFormProps = {
         setBrand("");
         setModel("");
         setRoom("");
+        setRoomId("");
         setPurchaseDate("");
         setCategory("");
         setSerialNumber("");
@@ -38,6 +46,7 @@ type AddApplianceFormProps = {
       setBrand(initialAppliance.brand ?? "");
       setModel(initialAppliance.model ?? "");
       setRoom(initialAppliance.room ?? "");
+      setRoomId(getInitialRoomId(initialAppliance));
       setPurchaseDate(initialAppliance.purchaseDate ?? "");
       setCategory(initialAppliance.category ?? "");
       setSerialNumber(initialAppliance.serialNumber ?? "");
@@ -82,6 +91,7 @@ type AddApplianceFormProps = {
                       name,
                       brand,
                       room,
+                      roomId: roomId || undefined,
                       warranty: initialAppliance?.warranty ?? "No Warranty",
                       model,
                       purchaseDate,
@@ -174,17 +184,18 @@ type AddApplianceFormProps = {
                   Room
                 </label>
   
-                <select value={room}
-                 onChange={(event) => setRoom(event.target.value)}
+                <select value={roomId}
+                 onChange={(event) => {
+                   const selectedRoom = roomsData.find((roomOption) => roomOption.id.toString() === event.target.value);
+                   setRoomId(event.target.value);
+                   setRoom(selectedRoom?.name ?? "");
+                 }}
                  className="mt-2 w-full rounded-lg border border-stone-200 bg-white px-4 py-3 text-sm outline-none focus:border-[#5E7563]"
                 >
-                 <option value="">Select a room</option>
-
-                  <option value="kitchen">Kitchen</option>
-                  <option value="bedroom">Bedroom</option>
-                  <option value="living-room">Living Room</option>
-                  <option value="laundry">Laundry</option>
-                  <option value="whole-home">Whole Home</option>
+                 <option value="">No Room</option>
+                 {roomsData.map((roomOption) => (
+                   <option key={roomOption.id} value={roomOption.id}>{roomOption.name}</option>
+                 ))}
                 </select>
               </div>
   

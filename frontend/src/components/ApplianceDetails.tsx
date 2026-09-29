@@ -1,5 +1,6 @@
 import { maintenanceData } from "../data/maintenanceData";
 import { warrantiesData } from "../data/warrantiesData";
+import { roomsData } from "../data/roomsData";
 import { formatMaintenanceDate } from "../services/maintenanceDateService";
 import {
   getWarrantyExpirationInfo,
@@ -41,6 +42,9 @@ type ApplianceDetailsProps = {
     const warrantyExpiration = applianceWarranty
       ? getWarrantyExpirationInfo(applianceWarranty.endDate)
       : null;
+    const assignedRoom = appliance.roomId
+      ? roomsData.find((room) => room.id.toString() === appliance.roomId)
+      : undefined;
 
     return (
       <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 p-6">
@@ -87,7 +91,7 @@ type ApplianceDetailsProps = {
             <div>
               <p className="text-sm text-stone-400">Room</p>
               <p className="mt-1 text-stone-700">
-                {appliance.room}
+                {assignedRoom?.name ?? "Not assigned to a room"}
               </p>
             </div>
   

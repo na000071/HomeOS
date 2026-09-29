@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { roomsData } from "../data/roomsData";
 import type { Appliance, ApplianceFormValues } from "../utils/applianceUtils";
 
 type EditApplianceFormProps = {
@@ -7,11 +8,17 @@ type EditApplianceFormProps = {
   onSave: (appliance: ApplianceFormValues) => void;
 };
 
+const getInitialRoomId = (appliance: Appliance): string => {
+  if (appliance.roomId) return appliance.roomId;
+  return roomsData.find((room) => room.name === appliance.room)?.id.toString() ?? "";
+};
+
 function EditApplianceForm({ appliance, onClose, onSave }: EditApplianceFormProps) {
   const [name, setName] = useState(appliance?.name ?? "");
   const [brand, setBrand] = useState(appliance?.brand ?? "");
   const [model, setModel] = useState(appliance?.model ?? "");
   const [room, setRoom] = useState(appliance?.room ?? "");
+  const [roomId, setRoomId] = useState(getInitialRoomId(appliance));
   const [purchaseDate, setPurchaseDate] = useState(appliance?.purchaseDate ?? "");
   const [category, setCategory] = useState(appliance?.category ?? "");
   const [serialNumber, setSerialNumber] = useState(appliance?.serialNumber ?? "");
@@ -23,6 +30,7 @@ function EditApplianceForm({ appliance, onClose, onSave }: EditApplianceFormProp
     setBrand(appliance?.brand ?? "");
     setModel(appliance?.model ?? "");
     setRoom(appliance?.room ?? "");
+    setRoomId(getInitialRoomId(appliance));
     setPurchaseDate(appliance?.purchaseDate ?? "");
     setCategory(appliance?.category ?? "");
     setSerialNumber(appliance?.serialNumber ?? "");
@@ -65,6 +73,7 @@ function EditApplianceForm({ appliance, onClose, onSave }: EditApplianceFormProp
               name,
               brand,
               room,
+              roomId: roomId || undefined,
               warranty: appliance?.warranty ?? "No Warranty",
               model,
               purchaseDate,
@@ -157,16 +166,18 @@ function EditApplianceForm({ appliance, onClose, onSave }: EditApplianceFormProp
               </label>
 
               <select
-                value={room}
-                onChange={(event) => setRoom(event.target.value)}
+                value={roomId}
+                onChange={(event) => {
+                  const selectedRoom = roomsData.find((roomOption) => roomOption.id.toString() === event.target.value);
+                  setRoomId(event.target.value);
+                  setRoom(selectedRoom?.name ?? "");
+                }}
                 className="mt-2 w-full rounded-lg border border-stone-200 bg-white px-4 py-3 text-sm outline-none focus:border-[#5E7563]"
               >
-                <option value="">Select a room</option>
-                <option value="kitchen">Kitchen</option>
-                <option value="bedroom">Bedroom</option>
-                <option value="living-room">Living Room</option>
-                <option value="laundry">Laundry</option>
-                <option value="whole-home">Whole Home</option>
+                <option value="">No Room</option>
+                {roomsData.map((roomOption) => (
+                  <option key={roomOption.id} value={roomOption.id}>{roomOption.name}</option>
+                ))}
               </select>
             </div>
 
