@@ -1,10 +1,16 @@
+import { Link } from "react-router-dom";
 import Card from "../components/Card";
+import ReminderStatusBadge from "../components/ReminderStatusBadge";
 import WarrantyStatusBadge from "../components/WarrantyStatusBadge";
 import { useHomeData } from "../context/useHomeData";
+import { formatMaintenanceDate } from "../services/maintenanceDateService";
 import { getMaintenanceDashboardData } from "../utils/maintenanceDashboard";
 import { getExpenseDashboardData } from "../utils/expenseDashboard";
 import { getWarrantyDashboardData } from "../utils/warrantyDashboard";
 import { sortDocuments } from "../utils/documentSorting";
+import { getReminderStatus } from "../utils/reminderStatus";
+import { getReminderSummary } from "../utils/reminderSummary";
+import { sortReminders } from "../utils/reminderSorting";
 
 const currencyFormatter = new Intl.NumberFormat("en-US", {
   style: "currency",
@@ -12,11 +18,16 @@ const currencyFormatter = new Intl.NumberFormat("en-US", {
 });
 
 function Dashboard() {
-  const { appliances, maintenanceTasks, warranties, expenses, documents } = useHomeData();
+  const { appliances, maintenanceTasks, warranties, expenses, documents, reminders } = useHomeData();
   const warrantyDashboard = getWarrantyDashboardData(warranties);
   const maintenanceDashboard = getMaintenanceDashboardData(maintenanceTasks);
   const expenseDashboard = getExpenseDashboardData(expenses);
   const recentDocuments = sortDocuments(documents, "newest").slice(0, 3);
+  const reminderSummary = getReminderSummary(reminders);
+  const relevantReminders = sortReminders(
+    reminders.filter((reminder) => getReminderStatus(reminder) !== "Completed"),
+    "dueDateAsc",
+  ).slice(0, 3);
     return (
       <div>
         {/* Dashboard Header */}
@@ -293,32 +304,40 @@ function Dashboard() {
                 </button>
             </div>
 
-            <div className="mt-4 space-y-3">
-              {[
-                ...warrantyDashboard.recentlyExpiring.slice(0, 2).map((warranty) => ({
-                  title: `${warranty.applianceName} warranty expires`,
-                  date: warranty.expirationDateLabel,
-                  tone: "bg-amber-500",
-                })),
-                ...maintenanceDashboard.upcomingTasks.slice(0, 2).map((task) => ({
-                  title: task.title,
-                  date: task.dueDate,
-                  tone: "bg-[#5E7563]",
-                })),
-              ].slice(0, 3).map((reminder) => (
-                <div key={`${reminder.title}-${reminder.date}`} className="rounded-xl border border-stone-200 bg-white p-5">
-                  <div className="flex items-start gap-4">
-                    <div className={`mt-1 h-2.5 w-2.5 rounded-full ${reminder.tone}`} />
+            <div className="mt-4 space-y-4">
+              <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
+                {[
+                  ["Total", reminderSummary.total],
+                  ["Upcoming", reminderSummary.upcoming],
+                  ["Due Soon", reminderSummary.dueSoon],
+                  ["Overdue", reminderSummary.overdue],
+                  ["Completed", reminderSummary.completed],
+                ].map(([label, value]) => (
+                  <div key={label} className="rounded-lg border border-stone-200 bg-white p-3">
+                    <p className="text-xs text-stone-500">{label}</p>
+                    <p className="mt-1 text-xl font-semibold text-[#20211F]">{value}</p>
+                  </div>
+                ))}
+              </div>
+
+              {relevantReminders.length > 0 ? relevantReminders.map((reminder) => (
+                <Link
+                  key={reminder.id}
+                  to="/reminders"
+                  aria-label={`Open reminder: ${reminder.title}`}
+                  className="block rounded-xl border border-stone-200 bg-white p-5 transition hover:border-[#C9D7CB] hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#5E7563] focus-visible:ring-offset-2"
+                >
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                     <div>
                       <h3 className="font-medium text-[#20211F]">{reminder.title}</h3>
-                      <p className="mt-1 text-sm text-stone-500">{reminder.date}</p>
+                      <p className="mt-1 text-sm text-stone-500">Due {formatMaintenanceDate(reminder.dueDate, "long")}</p>
                     </div>
+                    <ReminderStatusBadge status={getReminderStatus(reminder)} />
                   </div>
-                </div>
-              ))}
-              {warrantyDashboard.recentlyExpiring.length === 0 && maintenanceDashboard.upcomingTasks.length === 0 && (
+                </Link>
+              )) : (
                 <p className="rounded-xl border border-dashed border-stone-300 p-5 text-sm text-stone-500">
-                  No upcoming reminders.
+                  No active reminders.
                 </p>
               )}
             </div>

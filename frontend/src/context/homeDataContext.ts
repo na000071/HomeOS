@@ -3,6 +3,7 @@ import type { MaintenanceTask } from "../types/maintenance";
 import type { Expense } from "../types/expense";
 import type { Warranty } from "../types/warranty.ts";
 import type { Document } from "../types/document";
+import type { Reminder } from "../types/reminder";
 import type { Appliance } from "../utils/applianceUtils";
 
 export type HomeDataContextValue = {
@@ -16,6 +17,8 @@ export type HomeDataContextValue = {
   setExpenses: React.Dispatch<React.SetStateAction<Expense[]>>;
   documents: Document[];
   setDocuments: React.Dispatch<React.SetStateAction<Document[]>>;
+  reminders: Reminder[];
+  setReminders: React.Dispatch<React.SetStateAction<Reminder[]>>;
 };
 
 export const HomeDataContext = createContext<HomeDataContextValue | null>(null);
