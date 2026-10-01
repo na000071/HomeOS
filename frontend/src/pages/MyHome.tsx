@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useLocation } from "react-router-dom";
 import AddRoomForm, { type RoomDraft } from "../components/AddRoomForm";
 import Card from "../components/Card";
 import EditRoomForm from "../components/EditRoomForm";
@@ -11,6 +12,7 @@ import { roomTypes, type Room, type RoomType } from "../types/room";
 import { filterRooms, type RoomFilters } from "../utils/roomFilters";
 import { getRoomSummary } from "../utils/roomSummary";
 import { sortRoomApplianceCounts, type RoomSortOption } from "../utils/roomSorting";
+import type { SearchNavigationState } from "../types/search";
 
 const defaultRoomFilters: RoomFilters = {
   searchQuery: "",
@@ -18,13 +20,27 @@ const defaultRoomFilters: RoomFilters = {
 };
 
 function MyHome() {
+  const location = useLocation();
   const { appliances, setAppliances } = useHomeData();
   const [rooms, setRooms] = useState<Room[]>(roomsData);
   const [isRoomFormOpen, setIsRoomFormOpen] = useState(false);
-  const [selectedRoom, setSelectedRoom] = useState<Room | null>(null);
+  const navigationState = location.state as SearchNavigationState | null;
+  const selectedRoomId = navigationState?.roomId;
+  const [selectedRoom, setSelectedRoom] = useState<Room | null>(() =>
+    selectedRoomId === undefined
+      ? null
+      : roomsData.find((room) => room.id === selectedRoomId) ?? null,
+  );
   const [editingRoom, setEditingRoom] = useState<Room | null>(null);
   const [filters, setFilters] = useState<RoomFilters>(defaultRoomFilters);
   const [sortOption, setSortOption] = useState<RoomSortOption>("nameAsc");
+  useEffect(() => {
+    setSelectedRoom(
+      selectedRoomId === undefined
+        ? null
+        : rooms.find((room) => room.id === selectedRoomId) ?? null,
+    );
+  }, [location.key, rooms, selectedRoomId]);
   const roomSummary = getRoomSummary(rooms, appliances);
   const visibleRoomSummaries = sortRoomApplianceCounts(
     filterRooms(rooms, filters).map((room) => roomSummary.roomApplianceCounts.find((item) => item.room.id === room.id)).filter(

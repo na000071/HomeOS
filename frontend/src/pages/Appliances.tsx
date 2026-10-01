@@ -1,23 +1,31 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import AddApplianceForm from "../components/AddApplianceForm";
 import Button from "../components/Button";
 import Card from "../components/Card";
 import ApplianceDetails from "../components/ApplianceDetails";
 import EditApplianceForm from "../components/EditApplianceForm";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import {
   filterAppliances,
   type Appliance,
   type ApplianceFormValues,
 } from "../utils/applianceUtils";
 import { useHomeData } from "../context/useHomeData";
+import type { SearchNavigationState } from "../types/search";
 
 
 function Appliances() {
   const navigate = useNavigate();
+    const location = useLocation();
     const { appliances, setAppliances } = useHomeData();
+    const navigationState = location.state as SearchNavigationState | null;
+    const selectedApplianceId = navigationState?.applianceId;
     const [showForm, setShowForm] = useState(false);
-    const [selectedAppliance, setSelectedAppliance] = useState<Appliance | null>(null);
+    const [selectedAppliance, setSelectedAppliance] = useState<Appliance | null>(() =>
+      selectedApplianceId === undefined
+        ? null
+        : appliances.find((appliance) => appliance.id === selectedApplianceId) ?? null,
+    );
     const [editingAppliance, setEditingAppliance] = useState<Appliance | null>(null);
     const [filters, setFilters] = useState({
       searchQuery: "",
@@ -36,6 +44,14 @@ function Appliances() {
     
         setShowForm(false);
       };
+
+    useEffect(() => {
+      setSelectedAppliance(
+        selectedApplianceId === undefined
+          ? null
+          : appliances.find((appliance) => appliance.id === selectedApplianceId) ?? null,
+      );
+    }, [appliances, location.key, selectedApplianceId]);
 
     const handleDeleteAppliance = (applianceId: number) => {
       setAppliances((currentAppliances) =>

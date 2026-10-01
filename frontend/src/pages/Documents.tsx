@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useLocation } from "react-router-dom";
 import { appliancesData } from "../data/appliancesData";
 import Card from "../components/Card";
 import AddDocumentForm, { type DocumentDraft } from "../components/AddDocumentForm";
@@ -17,6 +18,7 @@ import {
 } from "../types/document";
 import { filterDocuments, type DocumentFilters } from "../utils/documentFilters";
 import { sortDocuments, type DocumentSortOption } from "../utils/documentSorting";
+import type { SearchNavigationState } from "../types/search";
 
 const defaultDocumentFilters: DocumentFilters = {
   category: "all",
@@ -25,12 +27,26 @@ const defaultDocumentFilters: DocumentFilters = {
 };
 
 function Documents() {
+  const location = useLocation();
   const { documents, setDocuments } = useHomeData();
+  const navigationState = location.state as SearchNavigationState | null;
+  const selectedDocumentId = navigationState?.documentId;
   const [isAddDocumentOpen, setIsAddDocumentOpen] = useState(false);
-  const [selectedDocument, setSelectedDocument] = useState<Document | null>(null);
+  const [selectedDocument, setSelectedDocument] = useState<Document | null>(() =>
+    selectedDocumentId === undefined
+      ? null
+      : documents.find((document) => document.id === selectedDocumentId) ?? null,
+  );
   const [editingDocument, setEditingDocument] = useState<Document | null>(null);
   const [filters, setFilters] = useState<DocumentFilters>(defaultDocumentFilters);
   const [sortOption, setSortOption] = useState<DocumentSortOption>("newest");
+  useEffect(() => {
+    setSelectedDocument(
+      selectedDocumentId === undefined
+        ? null
+        : documents.find((document) => document.id === selectedDocumentId) ?? null,
+    );
+  }, [documents, location.key, selectedDocumentId]);
     const documentSummary = getDocumentSummary(documents);
     const categoryBreakdown = getDocumentCategoryBreakdown(documents);
     const filteredDocuments = sortDocuments(filterDocuments(documents, filters), sortOption);

@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useLocation } from "react-router-dom";
 import AddExpenseForm, { type ExpenseDraft } from "../components/AddExpenseForm";
 import ExpenseDetails from "../components/ExpenseDetails";
 import ExpenseEmptyState from "../components/ExpenseEmptyState";
@@ -16,11 +17,19 @@ import {
   type ExpenseSortOption,
 } from "../utils/expenseFilters";
 import { formatExpenseAmount } from "../utils/expenseFormatting";
+import type { SearchNavigationState } from "../types/search";
 
 function Expenses() {
+    const location = useLocation();
     const { appliances, maintenanceTasks, expenses, setExpenses } = useHomeData();
+    const navigationState = location.state as SearchNavigationState | null;
+    const selectedExpenseId = navigationState?.expenseId;
     const [isFormOpen, setIsFormOpen] = useState(false);
-    const [selectedExpense, setSelectedExpense] = useState<Expense | null>(null);
+    const [selectedExpense, setSelectedExpense] = useState<Expense | null>(() =>
+      selectedExpenseId === undefined
+        ? null
+        : expenses.find((expense) => expense.id === selectedExpenseId) ?? null,
+    );
     const [editingExpense, setEditingExpense] = useState<Expense | null>(null);
     const [filters, setFilters] = useState<ExpenseFilters>({
       searchQuery: "",
@@ -30,6 +39,13 @@ function Expenses() {
       endDate: "",
     });
     const [sortOption, setSortOption] = useState<ExpenseSortOption>("newest");
+    useEffect(() => {
+      setSelectedExpense(
+        selectedExpenseId === undefined
+          ? null
+          : expenses.find((expense) => expense.id === selectedExpenseId) ?? null,
+      );
+    }, [expenses, location.key, selectedExpenseId]);
     const summary = getExpenseSummary(expenses);
     const visibleExpenses = filterAndSortExpenses(expenses, filters, sortOption);
     const categorySummary = getExpenseCategorySummary(expenses);

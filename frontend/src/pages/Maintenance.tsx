@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useLocation } from "react-router-dom";
 import AddMaintenanceForm, { type MaintenanceTaskDraft } from "../components/AddMaintenanceForm";
 import Button from "../components/Button";
@@ -19,6 +19,7 @@ import {
   maintenanceStatuses,
 } from "../types/maintenance";
 import type { MaintenanceTask } from "../types/maintenance";
+import type { SearchNavigationState } from "../types/search";
 import {
   filterAndSortMaintenanceTasks,
   type MaintenanceSortOption,
@@ -28,14 +29,16 @@ import {
 function Maintenance() {
   const { maintenanceTasks: tasks, setMaintenanceTasks: setTasks, appliances } = useHomeData();
   const location = useLocation();
-  const maintenanceNavigationState = location.state as {
-    applianceId?: number;
-    room?: string;
-  } | null;
+  const maintenanceNavigationState = location.state as (SearchNavigationState & { room?: string }) | null;
+  const selectedTaskId = maintenanceNavigationState?.maintenanceTaskId;
   const [isFormOpen, setIsFormOpen] = useState(
     Boolean(maintenanceNavigationState?.applianceId),
   );
-  const [selectedTask, setSelectedTask] = useState<MaintenanceTask | null>(null);
+  const [selectedTask, setSelectedTask] = useState<MaintenanceTask | null>(() =>
+    selectedTaskId === undefined
+      ? null
+      : tasks.find((task) => task.id === selectedTaskId) ?? null,
+  );
   const [editingTask, setEditingTask] = useState<MaintenanceTask | null>(null);
   const [filters, setFilters] = useState<MaintenanceTaskFilters>({
     status: "all",
@@ -45,6 +48,13 @@ function Maintenance() {
     frequency: "all",
   });
   const [sortOption, setSortOption] = useState<MaintenanceSortOption>("dueDateAsc");
+  useEffect(() => {
+    setSelectedTask(
+      selectedTaskId === undefined
+        ? null
+        : tasks.find((task) => task.id === selectedTaskId) ?? null,
+    );
+  }, [location.key, selectedTaskId, tasks]);
 
   const handleSaveTask = (taskDraft: MaintenanceTaskDraft) => {
     const nextTask = createMaintenanceTask(taskDraft);

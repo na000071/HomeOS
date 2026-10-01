@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useLocation } from "react-router-dom";
 import Card from "../components/Card";
 import AddReminderForm, { type ReminderDraft } from "../components/AddReminderForm";
 import EditReminderForm from "../components/EditReminderForm";
@@ -25,6 +26,7 @@ import { getReminderSummary } from "../utils/reminderSummary";
 import { getNextReminderId } from "../utils/reminderIds";
 import { sortReminders, type ReminderSortOption } from "../utils/reminderSorting";
 import { getReminderSuggestions, isReminderDuplicate, type ReminderSuggestion } from "../utils/reminderSuggestions";
+import type { SearchNavigationState } from "../types/search";
 
 const defaultReminderFilters: ReminderFilters = {
   status: "all",
@@ -34,13 +36,27 @@ const defaultReminderFilters: ReminderFilters = {
 };
 
 function Reminders() {
+  const location = useLocation();
   const { reminders, setReminders, maintenanceTasks, warranties } = useHomeData();
+  const navigationState = location.state as SearchNavigationState | null;
+  const selectedReminderId = navigationState?.reminderId;
   const [isFormOpen, setIsFormOpen] = useState(false);
-  const [selectedReminder, setSelectedReminder] = useState<Reminder | null>(null);
+  const [selectedReminder, setSelectedReminder] = useState<Reminder | null>(() =>
+    selectedReminderId === undefined
+      ? null
+      : reminders.find((reminder) => reminder.id === selectedReminderId) ?? null,
+  );
   const [editingReminder, setEditingReminder] = useState<Reminder | null>(null);
   const [filters, setFilters] = useState<ReminderFilters>(defaultReminderFilters);
   const [sortOption, setSortOption] = useState<ReminderSortOption>("dueDateAsc");
   const [dismissedSuggestionKeys, setDismissedSuggestionKeys] = useState<Set<string>>(new Set());
+  useEffect(() => {
+    setSelectedReminder(
+      selectedReminderId === undefined
+        ? null
+        : reminders.find((reminder) => reminder.id === selectedReminderId) ?? null,
+    );
+  }, [location.key, reminders, selectedReminderId]);
   const reminderSummary = getReminderSummary(reminders);
   const suggestions = getReminderSuggestions({
     maintenanceTasks,

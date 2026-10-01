@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useLocation } from "react-router-dom";
 import AddWarrantyForm, { type WarrantyDraft } from "../components/AddWarrantyForm";
 import Button from "../components/Button";
@@ -15,6 +15,7 @@ import {
 import { getApplianceById } from "../utils/applianceUtils";
 import type { Warranty } from "../types/warranty.ts";
 import { warrantyStatuses } from "../types/warranty.ts";
+import type { SearchNavigationState } from "../types/search";
 import {
   filterAndSortWarranties,
   type WarrantyFilters,
@@ -24,10 +25,8 @@ import {
 function Warranties() {
   const location = useLocation();
   const { warranties, setWarranties } = useHomeData();
-  const warrantyNavigationState = location.state as {
-    warrantyId?: number;
-    applianceId?: number;
-  } | null;
+  const warrantyNavigationState = location.state as SearchNavigationState | null;
+  const warrantyId = warrantyNavigationState?.warrantyId;
     const initialWarranty = warrantyNavigationState?.warrantyId
       ? warranties.find((warranty) => warranty.id === warrantyNavigationState.warrantyId)
       : undefined;
@@ -35,6 +34,12 @@ function Warranties() {
     const [selectedWarranty, setSelectedWarranty] = useState<Warranty | null>(
       initialWarranty ? withCalculatedWarrantyStatus(initialWarranty) : null,
     );
+    useEffect(() => {
+      const warranty = warrantyId === undefined
+        ? undefined
+        : warranties.find((currentWarranty) => currentWarranty.id === warrantyId);
+      setSelectedWarranty(warranty ? withCalculatedWarrantyStatus(warranty) : null);
+    }, [location.key, warrantyId, warranties]);
     const [editingWarranty, setEditingWarranty] = useState<Warranty | null>(null);
     const [filters, setFilters] = useState<WarrantyFilters>({
       searchQuery: "",

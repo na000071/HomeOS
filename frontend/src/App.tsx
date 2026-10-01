@@ -1,5 +1,6 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Sidebar from "./components/Sidebar";
+import GlobalSearch from "./components/GlobalSearch";
 import { HomeDataProvider } from "./context/HomeDataProvider";
 
 import Dashboard from "./pages/Dashboard";
@@ -20,6 +21,7 @@ function App() {
           <Sidebar />
 
         <main className="min-w-0 flex-1 p-4 sm:p-6 lg:p-8">
+          <GlobalSearch />
           <Routes>
             <Route path="/" element={<Welcome />} />
             <Route path="/dashboard" element={<Dashboard />} />
