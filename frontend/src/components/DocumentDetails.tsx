@@ -4,18 +4,22 @@ import { getDocumentAppliance, getDocumentExpense } from "../utils/documentRelat
 import { formatExpenseAmount } from "../utils/expenseFormatting";
 import { getMissingDocumentFields } from "../utils/documentValidation";
 import DocumentEmptyState from "./DocumentEmptyState";
+import type { Appliance } from "../utils/applianceUtils";
+import type { Expense } from "../types/expense";
 
 type DocumentDetailsProps = {
   document: Document;
   onClose: () => void;
   onEdit: () => void;
   onDelete: () => void;
+  appliances?: Appliance[];
+  expenses?: Expense[];
 };
 
-function DocumentDetails({ document, onClose, onEdit, onDelete }: DocumentDetailsProps) {
+function DocumentDetails({ document, onClose, onEdit, onDelete, appliances, expenses }: DocumentDetailsProps) {
   const dialogRef = useModalAccessibility(onClose);
-  const appliance = getDocumentAppliance(document);
-  const expense = getDocumentExpense(document);
+  const appliance = getDocumentAppliance(document, appliances);
+  const expense = getDocumentExpense(document, expenses);
   const missingFields = getMissingDocumentFields(document);
   const hasUnavailableAppliance = document.applianceId !== undefined && !appliance;
   const hasUnavailableExpense = document.expenseId !== undefined && !expense;

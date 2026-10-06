@@ -14,6 +14,12 @@ import {
   updateMaintenanceTaskSchedule,
 } from "../services/maintenanceDateService";
 import {
+  createMaintenanceTask as createMaintenanceTaskApi,
+  deleteMaintenanceTask,
+  updateMaintenanceTask as updateMaintenanceTaskApi,
+  type MaintenanceTaskWriteData,
+} from "../services/maintenanceApi";
+import {
   maintenanceFrequencies,
   maintenancePriorities,
   maintenanceStatuses,
@@ -27,7 +33,13 @@ import {
 } from "../utils/maintenanceTaskFilters.ts";
 
 function Maintenance() {
-  const { maintenanceTasks: tasks, setMaintenanceTasks: setTasks, appliances } = useHomeData();
+  const {
+    maintenanceTasks: tasks,
+    setMaintenanceTasks: setTasks,
+    appliances,
+    isDataLoading,
+    dataLoadError,
+  } = useHomeData();
   const location = useLocation();
   const maintenanceNavigationState = location.state as (SearchNavigationState & { room?: string }) | null;
   const selectedTaskId = maintenanceNavigationState?.maintenanceTaskId;
@@ -48,6 +60,7 @@ function Maintenance() {
     frequency: "all",
   });
   const [sortOption, setSortOption] = useState<MaintenanceSortOption>("dueDateAsc");
+  const [operationError, setOperationError] = useState<string | null>(null);
   useEffect(() => {
     setSelectedTask(
       selectedTaskId === undefined
@@ -56,35 +69,69 @@ function Maintenance() {
     );
   }, [location.key, selectedTaskId, tasks]);
 
-  const handleSaveTask = (taskDraft: MaintenanceTaskDraft) => {
-    const nextTask = createMaintenanceTask(taskDraft);
+  const toApiTask = (task: MaintenanceTask, status?: string): MaintenanceTaskWriteData => ({
+    title: task.title,
+    description: task.description,
+    applianceId: task.applianceId === null ? null : appliances.find((item) => item.id === task.applianceId)?.apiId ?? null,
+    room: task.room,
+    dueDate: task.dueDate,
+    frequency: task.frequency,
+    status,
+    lastCompletedDate: task.lastCompletedDate,
+    nextDueDate: task.nextDueDate,
+    priority: task.priority,
+  });
 
-    setTasks((currentTasks) => [nextTask, ...currentTasks]);
-    setIsFormOpen(false);
+  const handleSaveTask = async (taskDraft: MaintenanceTaskDraft) => {
+    try {
+      setOperationError(null);
+      const nextTask = createMaintenanceTask(taskDraft);
+      const createdTask = await createMaintenanceTaskApi(toApiTask(nextTask));
+      setTasks((currentTasks) => [{ ...nextTask, apiId: createdTask.id }, ...currentTasks]);
+      setIsFormOpen(false);
+    } catch {
+      setOperationError("We couldn't save this maintenance task. Please try again.");
+    }
   };
 
-  const handleUpdateTask = (updatedTask: MaintenanceTask) => {
+  const handleUpdateTask = async (updatedTask: MaintenanceTask) => {
     const taskWithUpdatedSchedule = updateMaintenanceTaskSchedule(updatedTask);
+    const currentTask = tasks.find((task) => task.id === updatedTask.id);
+    if (!currentTask?.apiId) return;
 
-    setTasks((currentTasks) =>
-      currentTasks.map((task) =>
-        task.id === taskWithUpdatedSchedule.id ? taskWithUpdatedSchedule : task,
-      ),
-    );
-
-    setEditingTask(null);
-    setSelectedTask(taskWithUpdatedSchedule);
+    try {
+      setOperationError(null);
+      await updateMaintenanceTaskApi(currentTask.apiId, toApiTask(taskWithUpdatedSchedule, taskWithUpdatedSchedule.status));
+      setTasks((currentTasks) =>
+        currentTasks.map((task) =>
+          task.id === taskWithUpdatedSchedule.id ? { ...taskWithUpdatedSchedule, apiId: currentTask.apiId } : task,
+        ),
+      );
+      setEditingTask(null);
+      setSelectedTask(taskWithUpdatedSchedule);
+    } catch {
+      setOperationError("We couldn't update this maintenance task. Please try again.");
+    }
   };
 
-  const handleDeleteTask = (taskId: number) => {
-    setTasks((currentTasks) => currentTasks.filter((task) => task.id !== taskId));
-    setSelectedTask(null);
-    setEditingTask((currentEditingTask) =>
-      currentEditingTask && currentEditingTask.id === taskId ? null : currentEditingTask,
-    );
+  const handleDeleteTask = async (taskId: number) => {
+    const task = tasks.find((currentTask) => currentTask.id === taskId);
+    if (!task?.apiId) return;
+
+    try {
+      setOperationError(null);
+      await deleteMaintenanceTask(task.apiId);
+      setTasks((currentTasks) => currentTasks.filter((currentTask) => currentTask.id !== taskId));
+      setSelectedTask(null);
+      setEditingTask((currentEditingTask) =>
+        currentEditingTask && currentEditingTask.id === taskId ? null : currentEditingTask,
+      );
+    } catch {
+      setOperationError("We couldn't delete this maintenance task. Please try again.");
+    }
   };
 
-  const handleMarkCompleted = (taskId: number) => {
+  const handleMarkCompleted = async (taskId: number) => {
     const task = tasks.find((currentTask) => currentTask.id === taskId);
 
     if (!task) {
@@ -93,12 +140,20 @@ function Maintenance() {
 
     const completedTask = completeMaintenanceTask(task);
 
-    setTasks((currentTasks) =>
-      currentTasks.map((currentTask) =>
-        currentTask.id === taskId ? completedTask : currentTask,
-      ),
-    );
-    setSelectedTask(completedTask);
+    if (!task.apiId) return;
+
+    try {
+      setOperationError(null);
+      await updateMaintenanceTaskApi(task.apiId, toApiTask(completedTask, "Completed"));
+      setTasks((currentTasks) =>
+        currentTasks.map((currentTask) =>
+          currentTask.id === taskId ? { ...completedTask, apiId: task.apiId } : currentTask,
+        ),
+      );
+      setSelectedTask(completedTask);
+    } catch {
+      setOperationError("We couldn't complete this maintenance task. Please try again.");
+    }
   };
 
   const totalTasks = tasks.length;
@@ -132,6 +187,18 @@ function Maintenance() {
 
         <Button onClick={() => setIsFormOpen(true)}>+ Add Task</Button>
       </header>
+
+      {(dataLoadError || operationError) && (
+        <div role="alert" className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+          {operationError ?? dataLoadError}
+        </div>
+      )}
+
+      {isDataLoading && (
+        <div className="rounded-xl border border-stone-200 bg-white p-6 text-center text-stone-500">
+          Loading maintenance tasks...
+        </div>
+      )}
 
       <section className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <MaintenanceSummaryCard
@@ -313,6 +380,7 @@ function Maintenance() {
               <MaintenanceTaskCard
                 key={task.id}
                 task={task}
+                appliances={appliances}
                 onViewTask={(taskToView) => setSelectedTask(taskToView)}
               />
             ))
@@ -324,6 +392,7 @@ function Maintenance() {
         <AddMaintenanceForm
           onClose={() => setIsFormOpen(false)}
           onSave={handleSaveTask}
+          applianceOptions={appliances}
           initialValues={{
             applianceId: maintenanceNavigationState?.applianceId ?? null,
             room: maintenanceNavigationState?.room ?? "",
@@ -341,6 +410,7 @@ function Maintenance() {
           }}
           onDelete={() => handleDeleteTask(selectedTask.id)}
           onMarkCompleted={() => handleMarkCompleted(selectedTask.id)}
+          appliances={appliances}
         />
       )}
 
@@ -349,6 +419,7 @@ function Maintenance() {
           task={editingTask}
           onClose={() => setEditingTask(null)}
           onSave={handleUpdateTask}
+          applianceOptions={appliances}
         />
       )}
     </div>

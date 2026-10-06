@@ -1,6 +1,6 @@
 import { getWarrantyExpirationInfo } from "../services/warrantyDateService";
 import type { Warranty } from "../types/warranty.ts";
-import { getApplianceById } from "../utils/applianceUtils";
+import { getApplianceById, type Appliance } from "../utils/applianceUtils";
 import Card from "./Card";
 import WarrantyEmptyState from "./WarrantyEmptyState";
 import WarrantyStatusBadge from "./WarrantyStatusBadge";
@@ -8,10 +8,11 @@ import WarrantyStatusBadge from "./WarrantyStatusBadge";
 type WarrantyCardProps = {
   warranty: Warranty;
   onViewWarranty: (warranty: Warranty) => void;
+  appliances?: Appliance[];
 };
 
-function WarrantyCard({ warranty, onViewWarranty }: WarrantyCardProps) {
-  const appliance = getApplianceById(warranty.applianceId);
+function WarrantyCard({ warranty, onViewWarranty, appliances }: WarrantyCardProps) {
+  const appliance = getApplianceById(warranty.applianceId, appliances);
   const expirationInfo = getWarrantyExpirationInfo(warranty.endDate);
   const applianceLabel = appliance
     ? `${appliance.brand} ${appliance.name}`

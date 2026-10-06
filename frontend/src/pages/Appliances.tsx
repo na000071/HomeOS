@@ -20,6 +20,7 @@ import {
   type ApplianceWriteData,
 } from "../services/appliancesApi";
 import { roomsData } from "../data/roomsData";
+import { useHomeData } from "../context/useHomeData";
 
 type ApiBackedAppliance = Appliance & { apiId: string };
 
@@ -28,9 +29,15 @@ const toDateInputValue = (date: string): string => date.split("T")[0] ?? "";
 const isGuid = (value: string | undefined): value is string =>
   value !== undefined && /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
 
-const toUiAppliance = (appliance: ApplianceApiModel, fallbackId: number): ApiBackedAppliance => ({
+const toNumericId = (id: string): number => {
+  let hash = 0;
+  for (const character of id) hash = (hash * 31 + character.charCodeAt(0)) | 0;
+  return Math.abs(hash) || 1;
+};
+
+const toUiAppliance = (appliance: ApplianceApiModel): ApiBackedAppliance => ({
   apiId: appliance.id,
-  id: fallbackId,
+  id: toNumericId(appliance.id),
   name: appliance.name,
   brand: appliance.brand,
   room: roomsData.find((room) => room.id.toString() === appliance.roomId)?.name ?? "",
@@ -62,6 +69,7 @@ const toApiAppliance = (appliance: ApplianceFormValues): ApplianceWriteData => (
 function Appliances() {
   const navigate = useNavigate();
     const location = useLocation();
+    const { maintenanceTasks, warranties } = useHomeData();
     const navigationState = location.state as SearchNavigationState | null;
     const selectedApplianceId = navigationState?.applianceId;
     const [appliances, setAppliances] = useState<ApiBackedAppliance[]>([]);
@@ -90,7 +98,7 @@ function Appliances() {
         try {
           const apiAppliances = await getAppliances();
           if (isCurrent) {
-            setAppliances(apiAppliances.map((appliance, index) => toUiAppliance(appliance, index + 1)));
+            setAppliances(apiAppliances.map((appliance) => toUiAppliance(appliance)));
           }
         } catch {
           if (isCurrent) {
@@ -116,7 +124,7 @@ function Appliances() {
         const createdAppliance = await createAppliance(toApiAppliance(appliance));
         setAppliances((currentAppliances) => [
           ...currentAppliances,
-          toUiAppliance(createdAppliance, currentAppliances.length + 1),
+          toUiAppliance(createdAppliance),
         ]);
         setShowForm(false);
       } catch {
@@ -348,6 +356,8 @@ function Appliances() {
         {selectedAppliance && (
           <ApplianceDetails
             appliance={selectedAppliance}
+            maintenanceTasks={maintenanceTasks}
+            warranties={warranties}
             onClose={() => setSelectedAppliance(null)}
             onEdit={() => {
               setEditingAppliance(selectedAppliance);

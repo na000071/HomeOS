@@ -1,13 +1,15 @@
 import type { Warranty } from "../types/warranty.ts";
+import type { Appliance } from "../utils/applianceUtils";
 import AddWarrantyForm, { type WarrantyDraft } from "./AddWarrantyForm";
 
 type EditWarrantyFormProps = {
   warranty: Warranty;
   onClose: () => void;
   onSave: (warranty: Warranty) => void;
+  applianceOptions?: Appliance[];
 };
 
-function EditWarrantyForm({ warranty, onClose, onSave }: EditWarrantyFormProps) {
+function EditWarrantyForm({ warranty, onClose, onSave, applianceOptions = [] }: EditWarrantyFormProps) {
   const initialValues: WarrantyDraft = {
     applianceId: warranty.applianceId,
     provider: warranty.provider,
@@ -32,6 +34,7 @@ function EditWarrantyForm({ warranty, onClose, onSave }: EditWarrantyFormProps) 
       title="Edit Warranty"
       description="Update the warranty coverage details."
       submitLabel="Save Changes"
+      applianceOptions={applianceOptions}
     />
   );
 }

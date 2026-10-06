@@ -8,7 +8,6 @@ import ReminderDetails from "../components/ReminderDetails";
 import ReminderEmptyState from "../components/ReminderEmptyState";
 import ReminderPriorityBadge from "../components/ReminderPriorityBadge";
 import ReminderStatusBadge from "../components/ReminderStatusBadge";
-import { appliancesData } from "../data/appliancesData";
 import { useHomeData } from "../context/useHomeData";
 import { formatMaintenanceDate } from "../services/maintenanceDateService";
 import {
@@ -27,6 +26,12 @@ import { getNextReminderId } from "../utils/reminderIds";
 import { sortReminders, type ReminderSortOption } from "../utils/reminderSorting";
 import { getReminderSuggestions, isReminderDuplicate, type ReminderSuggestion } from "../utils/reminderSuggestions";
 import type { SearchNavigationState } from "../types/search";
+import {
+  createReminder as createReminderApi,
+  deleteReminder,
+  updateReminder as updateReminderApi,
+  type ReminderWriteData,
+} from "../services/remindersApi";
 
 const defaultReminderFilters: ReminderFilters = {
   status: "all",
@@ -37,7 +42,16 @@ const defaultReminderFilters: ReminderFilters = {
 
 function Reminders() {
   const location = useLocation();
-  const { reminders, setReminders, maintenanceTasks, warranties } = useHomeData();
+  const {
+    reminders,
+    setReminders,
+    maintenanceTasks,
+    warranties,
+    appliances,
+    expenses,
+    isDataLoading,
+    dataLoadError,
+  } = useHomeData();
   const navigationState = location.state as SearchNavigationState | null;
   const selectedReminderId = navigationState?.reminderId;
   const [isFormOpen, setIsFormOpen] = useState(false);
@@ -50,6 +64,7 @@ function Reminders() {
   const [filters, setFilters] = useState<ReminderFilters>(defaultReminderFilters);
   const [sortOption, setSortOption] = useState<ReminderSortOption>("dueDateAsc");
   const [dismissedSuggestionKeys, setDismissedSuggestionKeys] = useState<Set<string>>(new Set());
+  const [operationError, setOperationError] = useState<string | null>(null);
   useEffect(() => {
     setSelectedReminder(
       selectedReminderId === undefined
@@ -65,6 +80,19 @@ function Reminders() {
   }).filter((suggestion) => !dismissedSuggestionKeys.has(suggestion.key));
   const visibleReminders = sortReminders(filterReminders(reminders, filters), sortOption);
   const hasActiveFilters = filters.status !== "all" || filters.type !== "all" || filters.priority !== "all" || filters.applianceId !== "all";
+
+  const toApiReminder = (reminder: Reminder, status?: string): ReminderWriteData => ({
+    title: reminder.title,
+    description: reminder.description,
+    type: reminder.type,
+    dueDate: reminder.dueDate,
+    priority: reminder.priority,
+    status,
+    applianceId: reminder.applianceId === undefined ? null : appliances.find((item) => item.id === reminder.applianceId)?.apiId ?? null,
+    maintenanceTaskId: reminder.maintenanceTaskId === undefined ? null : maintenanceTasks.find((item) => item.id === reminder.maintenanceTaskId)?.apiId ?? null,
+    warrantyId: reminder.warrantyId === undefined ? null : warranties.find((item) => item.id === reminder.warrantyId)?.apiId ?? null,
+    expenseId: reminder.expenseId === undefined ? null : expenses.find((item) => item.id === reminder.expenseId)?.apiId ?? null,
+  });
   const summaryCards = [
     { label: "Total Reminders", value: reminderSummary.total, description: "All tracked reminders" },
     { label: "Upcoming", value: reminderSummary.upcoming, description: "Next 30 days" },
@@ -73,11 +101,16 @@ function Reminders() {
     { label: "Completed", value: reminderSummary.completed, description: "Finished reminders" },
   ];
 
-  const handleAcceptSuggestion = (suggestion: ReminderSuggestion) => {
+  const handleAcceptSuggestion = async (suggestion: ReminderSuggestion) => {
     if (!isReminderDuplicate(suggestion.reminder, reminders)) {
-      setReminders((currentReminders) => {
-        return [...currentReminders, { ...suggestion.reminder, id: getNextReminderId(currentReminders) }];
-      });
+      try {
+        setOperationError(null);
+        const createdReminder = await createReminderApi(toApiReminder(suggestion.reminder, suggestion.reminder.status));
+        setReminders((currentReminders) => [...currentReminders, { ...suggestion.reminder, id: getNextReminderId(currentReminders), apiId: createdReminder.id }]);
+      } catch {
+        setOperationError("We couldn't save this suggested reminder. Please try again.");
+        return;
+      }
     }
 
     setDismissedSuggestionKeys((currentKeys) => new Set(currentKeys).add(suggestion.key));
@@ -107,6 +140,18 @@ function Reminders() {
           + Add Reminder
         </button>
       </div>
+
+      {(dataLoadError || operationError) && (
+        <div role="alert" className="mt-6 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+          {operationError ?? dataLoadError}
+        </div>
+      )}
+
+      {isDataLoading && (
+        <div className="mt-6 rounded-xl border border-stone-200 bg-white p-6 text-center text-stone-500">
+          Loading reminders...
+        </div>
+      )}
 
       {/* Summary Cards */}
       <div className="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
@@ -149,7 +194,7 @@ function Reminders() {
           Related appliance
           <select aria-label="Filter reminders by appliance" value={filters.applianceId} onChange={(event) => setFilters((currentFilters) => ({ ...currentFilters, applianceId: event.target.value === "all" ? "all" : Number(event.target.value) }))} className="mt-2 w-full rounded-lg border border-stone-200 bg-white px-4 py-3 font-normal text-stone-600 outline-none transition focus:border-[#5E7563] focus-visible:ring-2 focus-visible:ring-[#5E7563] focus-visible:ring-offset-1">
             <option value="all">All appliances</option>
-            {appliancesData.map((appliance) => <option key={appliance.id} value={appliance.id}>{appliance.name} · {appliance.brand}</option>)}
+            {appliances.map((appliance) => <option key={appliance.id} value={appliance.id}>{appliance.name} · {appliance.brand}</option>)}
           </select>
         </label>
 
@@ -217,7 +262,7 @@ function Reminders() {
               onAction={() => setIsFormOpen(true)}
             />
           ) : visibleReminders.length > 0 ? visibleReminders.map((reminder) => (
-            <ReminderCard key={reminder.id} reminder={reminder} onViewReminder={setSelectedReminder} />
+              <ReminderCard key={reminder.id} reminder={reminder} appliances={appliances} maintenanceTasks={maintenanceTasks} warranties={warranties} expenses={expenses} onViewReminder={setSelectedReminder} />
           )) : (
             <ReminderEmptyState
               title="No reminders match these filters"
@@ -232,41 +277,65 @@ function Reminders() {
       {isFormOpen && (
         <AddReminderForm
           onClose={() => setIsFormOpen(false)}
-          onSave={(reminder: ReminderDraft) => {
-            setReminders((currentReminders) => {
-              return [
-                ...currentReminders,
-                {
-                  ...reminder,
-                  id: getNextReminderId(currentReminders),
-                  status: getReminderStatus({ dueDate: reminder.dueDate, status: "Upcoming" }),
-                },
-              ];
-            });
-            setIsFormOpen(false);
+          onSave={async (reminder: ReminderDraft) => {
+            const nextReminder: Reminder = {
+              ...reminder,
+              id: getNextReminderId(reminders),
+              status: getReminderStatus({ dueDate: reminder.dueDate, status: "Upcoming" }),
+            };
+
+            try {
+              setOperationError(null);
+              const createdReminder = await createReminderApi(toApiReminder(nextReminder, nextReminder.status));
+              setReminders((currentReminders) => [...currentReminders, { ...nextReminder, apiId: createdReminder.id }]);
+              setIsFormOpen(false);
+            } catch {
+              setOperationError("We couldn't save this reminder. Please try again.");
+            }
           }}
+          applianceOptions={appliances}
+          maintenanceTaskOptions={maintenanceTasks}
+          warrantyOptions={warranties}
+          expenseOptions={expenses}
         />
       )}
 
       {selectedReminder && (
         <ReminderDetails
           reminder={selectedReminder}
+          appliances={appliances}
+          maintenanceTasks={maintenanceTasks}
+          warranties={warranties}
+          expenses={expenses}
           onClose={() => setSelectedReminder(null)}
-          onDelete={() => {
-            setReminders((currentReminders) =>
-              currentReminders.filter((currentReminder) => currentReminder.id !== selectedReminder.id),
-            );
-            setSelectedReminder(null);
+          onDelete={async () => {
+            const currentReminder = reminders.find((item) => item.id === selectedReminder.id);
+            if (!currentReminder?.apiId) return;
+
+            try {
+              setOperationError(null);
+              await deleteReminder(currentReminder.apiId);
+              setReminders((currentReminders) => currentReminders.filter((item) => item.id !== selectedReminder.id));
+              setSelectedReminder(null);
+            } catch {
+              setOperationError("We couldn't delete this reminder. Please try again.");
+            }
           }}
           onMarkCompleted={() => {
-            setReminders((currentReminders) =>
-              currentReminders.map((currentReminder) =>
-                currentReminder.id === selectedReminder.id
-                  ? { ...currentReminder, status: "Completed" }
-                  : currentReminder,
-              ),
-            );
-            setSelectedReminder(null);
+            const completeReminder = async () => {
+              const currentReminder = reminders.find((item) => item.id === selectedReminder.id);
+              if (!currentReminder?.apiId) return;
+
+              try {
+                setOperationError(null);
+                await updateReminderApi(currentReminder.apiId, toApiReminder({ ...currentReminder, status: "Completed" }, "Completed"));
+                setReminders((currentReminders) => currentReminders.map((item) => item.id === selectedReminder.id ? { ...item, status: "Completed" } : item));
+                setSelectedReminder(null);
+              } catch {
+                setOperationError("We couldn't complete this reminder. Please try again.");
+              }
+            };
+            void completeReminder();
           }}
           onEdit={() => {
             setEditingReminder(selectedReminder);
@@ -279,21 +348,27 @@ function Reminders() {
         <EditReminderForm
           reminder={editingReminder}
           onClose={() => setEditingReminder(null)}
-          onSave={(updatedReminder) => {
+          onSave={async (updatedReminder) => {
             const reminderWithUpdatedStatus: Reminder = {
               ...updatedReminder,
               status: getReminderStatus(updatedReminder),
             };
+            const currentReminder = reminders.find((item) => item.id === updatedReminder.id);
+            if (!currentReminder?.apiId) return;
 
-            setReminders((currentReminders) =>
-              currentReminders.map((currentReminder) =>
-                currentReminder.id === reminderWithUpdatedStatus.id
-                  ? reminderWithUpdatedStatus
-                  : currentReminder,
-              ),
-            );
-            setEditingReminder(null);
+            try {
+              setOperationError(null);
+              await updateReminderApi(currentReminder.apiId, toApiReminder(reminderWithUpdatedStatus, reminderWithUpdatedStatus.status));
+              setReminders((currentReminders) => currentReminders.map((item) => item.id === reminderWithUpdatedStatus.id ? { ...reminderWithUpdatedStatus, apiId: currentReminder.apiId } : item));
+              setEditingReminder(null);
+            } catch {
+              setOperationError("We couldn't update this reminder. Please try again.");
+            }
           }}
+          applianceOptions={appliances}
+          maintenanceTaskOptions={maintenanceTasks}
+          warrantyOptions={warranties}
+          expenseOptions={expenses}
         />
       )}
 

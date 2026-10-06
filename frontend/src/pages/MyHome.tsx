@@ -6,13 +6,47 @@ import EditRoomForm from "../components/EditRoomForm";
 import RoomEmptyState from "../components/RoomEmptyState";
 import RoomCard from "../components/RoomCard";
 import RoomDetails from "../components/RoomDetails";
-import { roomsData } from "../data/roomsData";
 import { useHomeData } from "../context/useHomeData";
 import { roomTypes, type Room, type RoomType } from "../types/room";
 import { filterRooms, type RoomFilters } from "../utils/roomFilters";
 import { getRoomSummary } from "../utils/roomSummary";
 import { sortRoomApplianceCounts, type RoomSortOption } from "../utils/roomSorting";
 import type { SearchNavigationState } from "../types/search";
+import {
+  createRoom,
+  deleteRoom,
+  getRooms,
+  updateRoom,
+  type RoomApiModel,
+  type RoomWriteData,
+} from "../services/roomsApi";
+
+type ApiBackedRoom = Room & { apiId: string };
+
+const toRoomType = (type: string): RoomType =>
+  roomTypes.includes(type as RoomType) ? type as RoomType : "Other";
+
+const toNumericId = (id: string): number => {
+  let hash = 0;
+  for (const character of id) hash = (hash * 31 + character.charCodeAt(0)) | 0;
+  return Math.abs(hash) || 1;
+};
+
+const toUiRoom = (room: RoomApiModel): ApiBackedRoom => ({
+  apiId: room.id,
+  id: toNumericId(room.id),
+  name: room.name,
+  description: room.description ?? "",
+  type: toRoomType(room.type),
+  icon: room.icon ?? "room",
+});
+
+const toApiRoom = (room: Omit<Room, "id">): RoomWriteData => ({
+  name: room.name,
+  description: room.description,
+  type: room.type,
+  icon: room.icon,
+});
 
 const defaultRoomFilters: RoomFilters = {
   searchQuery: "",
@@ -22,18 +56,51 @@ const defaultRoomFilters: RoomFilters = {
 function MyHome() {
   const location = useLocation();
   const { appliances, setAppliances } = useHomeData();
-  const [rooms, setRooms] = useState<Room[]>(roomsData);
+  const [rooms, setRooms] = useState<ApiBackedRoom[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isRoomFormOpen, setIsRoomFormOpen] = useState(false);
   const navigationState = location.state as SearchNavigationState | null;
   const selectedRoomId = navigationState?.roomId;
   const [selectedRoom, setSelectedRoom] = useState<Room | null>(() =>
     selectedRoomId === undefined
       ? null
-      : roomsData.find((room) => room.id === selectedRoomId) ?? null,
+        : null,
   );
   const [editingRoom, setEditingRoom] = useState<Room | null>(null);
   const [filters, setFilters] = useState<RoomFilters>(defaultRoomFilters);
   const [sortOption, setSortOption] = useState<RoomSortOption>("nameAsc");
+
+  useEffect(() => {
+    let isCurrent = true;
+
+    const loadRooms = async () => {
+      setIsLoading(true);
+      setErrorMessage(null);
+
+      try {
+        const apiRooms = await getRooms();
+        if (isCurrent) {
+          setRooms(apiRooms.map((room) => toUiRoom(room)));
+        }
+      } catch {
+        if (isCurrent) {
+          setErrorMessage("We couldn't load your rooms. Please try again.");
+        }
+      } finally {
+        if (isCurrent) {
+          setIsLoading(false);
+        }
+      }
+    };
+
+    void loadRooms();
+
+    return () => {
+      isCurrent = false;
+    };
+  }, []);
+
   useEffect(() => {
     setSelectedRoom(
       selectedRoomId === undefined
@@ -188,6 +255,17 @@ function MyHome() {
           </label>
         </div>
 
+        {errorMessage && (
+          <div role="alert" className="mt-4 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+            {errorMessage}
+          </div>
+        )}
+
+        {isLoading ? (
+          <div className="mt-4 rounded-xl border border-stone-200 bg-white p-8 text-center text-stone-500">
+            Loading rooms...
+          </div>
+        ) : errorMessage ? null : (
         <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {rooms.length === 0 ? (
             <RoomEmptyState
@@ -207,21 +285,24 @@ function MyHome() {
             />
           )}
         </div>
+        )}
       </section>
 
       {isRoomFormOpen && (
         <AddRoomForm
           onClose={() => setIsRoomFormOpen(false)}
-          onSave={(room: RoomDraft) => {
-            setRooms((currentRooms) => {
-              const nextId = currentRooms.reduce(
-                (highestId, currentRoom) => Math.max(highestId, currentRoom.id),
-                0,
-              ) + 1;
-
-              return [...currentRooms, { ...room, id: nextId }];
-            });
-            setIsRoomFormOpen(false);
+          onSave={async (room: RoomDraft) => {
+            try {
+              setErrorMessage(null);
+              const createdRoom = await createRoom(toApiRoom(room));
+              setRooms((currentRooms) => [
+                ...currentRooms,
+                toUiRoom(createdRoom),
+              ]);
+              setIsRoomFormOpen(false);
+            } catch {
+              setErrorMessage("We couldn't save this room. Please try again.");
+            }
           }}
         />
       )}
@@ -231,18 +312,27 @@ function MyHome() {
           room={selectedRoom}
           appliances={appliances}
           onClose={() => setSelectedRoom(null)}
-          onDelete={() => {
-            setRooms((currentRooms) =>
-              currentRooms.filter((currentRoom) => currentRoom.id !== selectedRoom.id),
-            );
-            setAppliances((currentAppliances) =>
-              currentAppliances.map((appliance) =>
-                appliance.roomId === selectedRoom.id.toString()
-                  ? { ...appliance, room: "Whole Home", roomId: undefined }
-                  : appliance,
-              ),
-            );
-            setSelectedRoom(null);
+          onDelete={async () => {
+            const room = rooms.find((currentRoom) => currentRoom.id === selectedRoom.id);
+            if (!room) return;
+
+            try {
+              setErrorMessage(null);
+              await deleteRoom(room.apiId);
+              setRooms((currentRooms) =>
+                currentRooms.filter((currentRoom) => currentRoom.apiId !== room.apiId),
+              );
+              setAppliances((currentAppliances) =>
+                currentAppliances.map((appliance) =>
+                  appliance.roomId === selectedRoom.id.toString()
+                    ? { ...appliance, room: "Whole Home", roomId: undefined }
+                    : appliance,
+                ),
+              );
+              setSelectedRoom(null);
+            } catch {
+              setErrorMessage("We couldn't delete this room. Please try again.");
+            }
           }}
           onEdit={() => {
             setEditingRoom(selectedRoom);
@@ -255,13 +345,24 @@ function MyHome() {
         <EditRoomForm
           room={editingRoom}
           onClose={() => setEditingRoom(null)}
-          onSave={(updatedRoom) => {
-            setRooms((currentRooms) =>
-              currentRooms.map((currentRoom) =>
-                currentRoom.id === updatedRoom.id ? updatedRoom : currentRoom,
-              ),
-            );
-            setEditingRoom(null);
+          onSave={async (updatedRoom) => {
+            const room = rooms.find((currentRoom) => currentRoom.id === updatedRoom.id);
+            if (!room) return;
+
+            try {
+              setErrorMessage(null);
+              await updateRoom(room.apiId, toApiRoom(updatedRoom));
+              setRooms((currentRooms) =>
+                currentRooms.map((currentRoom) =>
+                  currentRoom.apiId === room.apiId
+                    ? { ...updatedRoom, apiId: room.apiId }
+                    : currentRoom,
+                ),
+              );
+              setEditingRoom(null);
+            } catch {
+              setErrorMessage("We couldn't update this room. Please try again.");
+            }
           }}
         />
       )}

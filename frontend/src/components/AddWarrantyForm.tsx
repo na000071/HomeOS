@@ -1,6 +1,6 @@
 import { useState } from "react";
-import { appliancesData } from "../data/appliancesData";
 import { useModalAccessibility } from "../hooks/useModalAccessibility";
+import type { Appliance } from "../utils/applianceUtils";
 
 export type WarrantyDraft = {
   applianceId: number | null;
@@ -19,6 +19,7 @@ type AddWarrantyFormProps = {
   title?: string;
   description?: string;
   submitLabel?: string;
+  applianceOptions?: Appliance[];
 };
 
 const defaultFormValues: WarrantyDraft = {
@@ -38,6 +39,7 @@ function AddWarrantyForm({
   title = "Add Warranty",
   description = "Add coverage details for an appliance in your home.",
   submitLabel = "Save Warranty",
+  applianceOptions = [],
 }: AddWarrantyFormProps) {
   const dialogRef = useModalAccessibility(onClose);
   const [formValues, setFormValues] = useState<WarrantyDraft>({
@@ -134,7 +136,7 @@ function AddWarrantyForm({
                 aria-describedby={errors.applianceId ? "warranty-appliance-error" : undefined}
               >
                 <option value="">Select an appliance</option>
-                {appliancesData.map((appliance) => (
+                {applianceOptions.map((appliance) => (
                   <option key={appliance.id} value={appliance.id}>
                     {appliance.name} · {appliance.brand}
                   </option>

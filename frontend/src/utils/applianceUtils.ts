@@ -12,12 +12,12 @@ export type ApplianceFilters = {
   category: string;
 };
 
-export const getApplianceById = (applianceId: number | null): Appliance | undefined => {
+export const getApplianceById = (applianceId: number | null, appliances: Appliance[] = appliancesData): Appliance | undefined => {
   if (applianceId === null) {
     return undefined;
   }
 
-  return appliancesData.find((appliance) => appliance.id === applianceId);
+  return appliances.find((appliance) => appliance.id === applianceId);
 };
 
 export const filterAppliances = (

@@ -12,6 +12,10 @@ import { formatExpenseAmount } from "../utils/expenseFormatting";
 import Card from "./Card";
 import ReminderPriorityBadge from "./ReminderPriorityBadge";
 import ReminderStatusBadge from "./ReminderStatusBadge";
+import type { Appliance } from "../utils/applianceUtils";
+import type { Expense } from "../types/expense";
+import type { MaintenanceTask } from "../types/maintenance";
+import type { Warranty } from "../types/warranty";
 
 type ReminderDetailsProps = {
   reminder: Reminder;
@@ -19,6 +23,10 @@ type ReminderDetailsProps = {
   onEdit: () => void;
   onDelete: () => void;
   onMarkCompleted: () => void;
+  appliances?: Appliance[];
+  maintenanceTasks?: MaintenanceTask[];
+  warranties?: Warranty[];
+  expenses?: Expense[];
 };
 
 type RelationshipEmptyStateProps = {
@@ -35,12 +43,12 @@ function RelationshipEmptyState({ title, description }: RelationshipEmptyStatePr
   );
 }
 
-function ReminderDetails({ reminder, onClose, onEdit, onDelete, onMarkCompleted }: ReminderDetailsProps) {
+function ReminderDetails({ reminder, onClose, onEdit, onDelete, onMarkCompleted, appliances, maintenanceTasks, warranties, expenses }: ReminderDetailsProps) {
   const dialogRef = useModalAccessibility(onClose);
-  const appliance = getReminderAppliance(reminder);
-  const maintenanceTask = getReminderMaintenanceTask(reminder);
-  const warranty = getReminderWarranty(reminder);
-  const expense = getReminderExpense(reminder);
+  const appliance = getReminderAppliance(reminder, appliances);
+  const maintenanceTask = getReminderMaintenanceTask(reminder, maintenanceTasks);
+  const warranty = getReminderWarranty(reminder, warranties);
+  const expense = getReminderExpense(reminder, expenses);
   const hasUnavailableAppliance = reminder.applianceId !== undefined && !appliance;
   const hasUnavailableMaintenanceTask = reminder.maintenanceTaskId !== undefined && !maintenanceTask;
   const hasUnavailableWarranty = reminder.warrantyId !== undefined && !warranty;

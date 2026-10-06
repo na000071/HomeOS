@@ -18,10 +18,23 @@ import {
 } from "../utils/expenseFilters";
 import { formatExpenseAmount } from "../utils/expenseFormatting";
 import type { SearchNavigationState } from "../types/search";
+import {
+  createExpense as createExpenseApi,
+  deleteExpense,
+  updateExpense as updateExpenseApi,
+  type ExpenseWriteData,
+} from "../services/expensesApi";
 
 function Expenses() {
     const location = useLocation();
-    const { appliances, maintenanceTasks, expenses, setExpenses } = useHomeData();
+    const {
+      appliances,
+      maintenanceTasks,
+      expenses,
+      setExpenses,
+      isDataLoading,
+      dataLoadError,
+    } = useHomeData();
     const navigationState = location.state as SearchNavigationState | null;
     const selectedExpenseId = navigationState?.expenseId;
     const [isFormOpen, setIsFormOpen] = useState(false);
@@ -39,6 +52,7 @@ function Expenses() {
       endDate: "",
     });
     const [sortOption, setSortOption] = useState<ExpenseSortOption>("newest");
+    const [operationError, setOperationError] = useState<string | null>(null);
     useEffect(() => {
       setSelectedExpense(
         selectedExpenseId === undefined
@@ -61,35 +75,65 @@ function Expenses() {
       setSortOption("newest");
     };
 
-    const handleSaveExpense = (expenseDraft: ExpenseDraft) => {
+    const toApiExpense = (expense: Expense): ExpenseWriteData => ({
+      category: expense.category,
+      description: expense.description,
+      amount: expense.amount,
+      date: expense.date,
+      applianceId: expense.applianceId === undefined ? null : appliances.find((item) => item.id === expense.applianceId)?.apiId ?? null,
+      maintenanceTaskId: expense.maintenanceTaskId === undefined ? null : maintenanceTasks.find((item) => item.id === expense.maintenanceTaskId)?.apiId ?? null,
+      notes: expense.notes || null,
+    });
+
+    const handleSaveExpense = async (expenseDraft: ExpenseDraft) => {
       const expense: Expense = {
         ...expenseDraft,
         id: Date.now(),
         amount: Number(expenseDraft.amount),
       };
 
-      setExpenses((currentExpenses) => [expense, ...currentExpenses]);
-      setIsFormOpen(false);
+      try {
+        setOperationError(null);
+        const createdExpense = await createExpenseApi(toApiExpense(expense));
+        setExpenses((currentExpenses) => [{ ...expense, apiId: createdExpense.id }, ...currentExpenses]);
+        setIsFormOpen(false);
+      } catch {
+        setOperationError("We couldn't save this expense. Please try again.");
+      }
     };
 
-    const handleUpdateExpense = (updatedExpense: Expense) => {
-      setExpenses((currentExpenses) =>
-        currentExpenses.map((expense) =>
-          expense.id === updatedExpense.id ? updatedExpense : expense,
-        ),
-      );
-      setEditingExpense(null);
-      setSelectedExpense(null);
+    const handleUpdateExpense = async (updatedExpense: Expense) => {
+      const currentExpense = expenses.find((expense) => expense.id === updatedExpense.id);
+      if (!currentExpense?.apiId) return;
+
+      try {
+        setOperationError(null);
+        await updateExpenseApi(currentExpense.apiId, toApiExpense(updatedExpense));
+        setExpenses((currentExpenses) =>
+          currentExpenses.map((expense) => expense.id === updatedExpense.id ? { ...updatedExpense, apiId: currentExpense.apiId } : expense),
+        );
+        setEditingExpense(null);
+        setSelectedExpense(null);
+      } catch {
+        setOperationError("We couldn't update this expense. Please try again.");
+      }
     };
 
-    const handleDeleteExpense = (expenseId: number) => {
-      setExpenses((currentExpenses) =>
-        currentExpenses.filter((expense) => expense.id !== expenseId),
-      );
-      setSelectedExpense(null);
-      setEditingExpense((currentEditingExpense) =>
-        currentEditingExpense?.id === expenseId ? null : currentEditingExpense,
-      );
+    const handleDeleteExpense = async (expenseId: number) => {
+      const expense = expenses.find((item) => item.id === expenseId);
+      if (!expense?.apiId) return;
+
+      try {
+        setOperationError(null);
+        await deleteExpense(expense.apiId);
+        setExpenses((currentExpenses) => currentExpenses.filter((item) => item.id !== expenseId));
+        setSelectedExpense(null);
+        setEditingExpense((currentEditingExpense) =>
+          currentEditingExpense?.id === expenseId ? null : currentEditingExpense,
+        );
+      } catch {
+        setOperationError("We couldn't delete this expense. Please try again.");
+      }
     };
 
     return (
@@ -112,6 +156,18 @@ function Expenses() {
             + Add Expense
           </button>
         </div>
+
+        {(dataLoadError || operationError) && (
+          <div role="alert" className="mt-6 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+            {operationError ?? dataLoadError}
+          </div>
+        )}
+
+        {isDataLoading && (
+          <div className="mt-6 rounded-xl border border-stone-200 bg-white p-6 text-center text-stone-500">
+            Loading expenses...
+          </div>
+        )}
 
         <section className="mt-8 rounded-2xl border border-stone-200 bg-white/80 p-5 shadow-sm sm:p-6">
           <div>
@@ -213,7 +269,7 @@ function Expenses() {
                 onAction={clearFilters}
               />
             ) : visibleExpenses.map((expense) => (
-              <ExpenseCard key={expense.id} expense={expense} maintenanceTasks={maintenanceTasks} onViewExpense={setSelectedExpense} />
+              <ExpenseCard key={expense.id} expense={expense} appliances={appliances} maintenanceTasks={maintenanceTasks} onViewExpense={setSelectedExpense} />
             ))}
          </div>
         </section>

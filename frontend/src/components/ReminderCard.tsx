@@ -5,14 +5,22 @@ import { getReminderStatus } from "../utils/reminderStatus";
 import Card from "./Card";
 import ReminderPriorityBadge from "./ReminderPriorityBadge";
 import ReminderStatusBadge from "./ReminderStatusBadge";
+import type { Appliance } from "../utils/applianceUtils";
+import type { Expense } from "../types/expense";
+import type { MaintenanceTask } from "../types/maintenance";
+import type { Warranty } from "../types/warranty";
 
 type ReminderCardProps = {
   reminder: Reminder;
   onViewReminder: (reminder: Reminder) => void;
+  appliances?: Appliance[];
+  maintenanceTasks?: MaintenanceTask[];
+  warranties?: Warranty[];
+  expenses?: Expense[];
 };
 
-function ReminderCard({ reminder, onViewReminder }: ReminderCardProps) {
-  const relatedLabel = getReminderRelatedLabel(reminder);
+function ReminderCard({ reminder, onViewReminder, appliances, maintenanceTasks, warranties, expenses }: ReminderCardProps) {
+  const relatedLabel = getReminderRelatedLabel(reminder, { appliances, maintenanceTasks, warranties, expenses });
   const currentStatus = getReminderStatus(reminder);
 
   return (

@@ -1,8 +1,4 @@
 import { useState } from "react";
-import { appliancesData } from "../data/appliancesData";
-import { expensesData } from "../data/expensesData";
-import { maintenanceTasksData } from "../data/maintenanceTasksData";
-import { warrantiesData } from "../data/warrantiesData";
 import { useModalAccessibility } from "../hooks/useModalAccessibility";
 import {
   reminderPriorities,
@@ -11,6 +7,10 @@ import {
   type ReminderPriority,
   type ReminderType,
 } from "../types/reminder";
+import type { Appliance } from "../utils/applianceUtils";
+import type { Expense } from "../types/expense";
+import type { MaintenanceTask } from "../types/maintenance";
+import type { Warranty } from "../types/warranty";
 
 export type ReminderDraft = Omit<Reminder, "id" | "status">;
 
@@ -26,6 +26,10 @@ type AddReminderFormProps = {
   title?: string;
   description?: string;
   submitLabel?: string;
+  applianceOptions?: Appliance[];
+  maintenanceTaskOptions?: MaintenanceTask[];
+  warrantyOptions?: Warranty[];
+  expenseOptions?: Expense[];
 };
 
 const defaultFormValues: ReminderFormValues = {
@@ -61,6 +65,10 @@ function AddReminderForm({
   title = "Add Reminder",
   description = "Add an important date or task to your home reminders.",
   submitLabel = "Save Reminder",
+  applianceOptions = [],
+  maintenanceTaskOptions = [],
+  warrantyOptions = [],
+  expenseOptions = [],
 }: AddReminderFormProps) {
   const dialogRef = useModalAccessibility(onClose);
   const [formValues, setFormValues] = useState<ReminderFormValues>(() => getInitialFormValues(initialReminder));
@@ -136,19 +144,19 @@ function AddReminderForm({
             </div>
             <div>
               <label htmlFor="reminder-appliance" className="text-sm font-medium text-stone-700">Related appliance <span className="font-normal text-stone-400">(optional)</span></label>
-              <select id="reminder-appliance" value={formValues.applianceId ?? ""} onChange={(event) => updateField("applianceId", event.target.value ? Number(event.target.value) : undefined)} className={inputClass}><option value="">No appliance</option>{appliancesData.map((appliance) => <option key={appliance.id} value={appliance.id}>{appliance.name} · {appliance.brand}</option>)}</select>
+              <select id="reminder-appliance" value={formValues.applianceId ?? ""} onChange={(event) => updateField("applianceId", event.target.value ? Number(event.target.value) : undefined)} className={inputClass}><option value="">No appliance</option>{applianceOptions.map((appliance) => <option key={appliance.id} value={appliance.id}>{appliance.name} · {appliance.brand}</option>)}</select>
             </div>
             <div>
               <label htmlFor="reminder-maintenance" className="text-sm font-medium text-stone-700">Related maintenance task <span className="font-normal text-stone-400">(optional)</span></label>
-              <select id="reminder-maintenance" value={formValues.maintenanceTaskId ?? ""} onChange={(event) => updateField("maintenanceTaskId", event.target.value ? Number(event.target.value) : undefined)} className={inputClass}><option value="">No maintenance task</option>{maintenanceTasksData.map((task) => <option key={task.id} value={task.id}>{task.title}</option>)}</select>
+              <select id="reminder-maintenance" value={formValues.maintenanceTaskId ?? ""} onChange={(event) => updateField("maintenanceTaskId", event.target.value ? Number(event.target.value) : undefined)} className={inputClass}><option value="">No maintenance task</option>{maintenanceTaskOptions.map((task) => <option key={task.id} value={task.id}>{task.title}</option>)}</select>
             </div>
             <div>
               <label htmlFor="reminder-warranty" className="text-sm font-medium text-stone-700">Related warranty <span className="font-normal text-stone-400">(optional)</span></label>
-              <select id="reminder-warranty" value={formValues.warrantyId ?? ""} onChange={(event) => updateField("warrantyId", event.target.value ? Number(event.target.value) : undefined)} className={inputClass}><option value="">No warranty</option>{warrantiesData.map((warranty) => <option key={warranty.id} value={warranty.id}>{warranty.provider} · {warranty.warrantyType}</option>)}</select>
+              <select id="reminder-warranty" value={formValues.warrantyId ?? ""} onChange={(event) => updateField("warrantyId", event.target.value ? Number(event.target.value) : undefined)} className={inputClass}><option value="">No warranty</option>{warrantyOptions.map((warranty) => <option key={warranty.id} value={warranty.id}>{warranty.provider} · {warranty.warrantyType}</option>)}</select>
             </div>
             <div>
               <label htmlFor="reminder-expense" className="text-sm font-medium text-stone-700">Related expense <span className="font-normal text-stone-400">(optional)</span></label>
-              <select id="reminder-expense" value={formValues.expenseId ?? ""} onChange={(event) => updateField("expenseId", event.target.value ? Number(event.target.value) : undefined)} className={inputClass}><option value="">No expense</option>{expensesData.map((expense) => <option key={expense.id} value={expense.id}>{expense.description} · {expense.date}</option>)}</select>
+              <select id="reminder-expense" value={formValues.expenseId ?? ""} onChange={(event) => updateField("expenseId", event.target.value ? Number(event.target.value) : undefined)} className={inputClass}><option value="">No expense</option>{expenseOptions.map((expense) => <option key={expense.id} value={expense.id}>{expense.description} · {expense.date}</option>)}</select>
             </div>
           </div>
           <div className="flex flex-col-reverse gap-3 border-t border-stone-100 pt-5 sm:flex-row sm:justify-end">

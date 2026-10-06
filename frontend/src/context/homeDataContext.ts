@@ -6,19 +6,23 @@ import type { Document } from "../types/document";
 import type { Reminder } from "../types/reminder";
 import type { Appliance } from "../utils/applianceUtils";
 
+export type ApiBacked<T> = T & { apiId?: string };
+
 export type HomeDataContextValue = {
-  appliances: Appliance[];
-  setAppliances: React.Dispatch<React.SetStateAction<Appliance[]>>;
-  maintenanceTasks: MaintenanceTask[];
-  setMaintenanceTasks: React.Dispatch<React.SetStateAction<MaintenanceTask[]>>;
-  warranties: Warranty[];
-  setWarranties: React.Dispatch<React.SetStateAction<Warranty[]>>;
-  expenses: Expense[];
-  setExpenses: React.Dispatch<React.SetStateAction<Expense[]>>;
-  documents: Document[];
-  setDocuments: React.Dispatch<React.SetStateAction<Document[]>>;
-  reminders: Reminder[];
-  setReminders: React.Dispatch<React.SetStateAction<Reminder[]>>;
+  appliances: ApiBacked<Appliance>[];
+  setAppliances: React.Dispatch<React.SetStateAction<ApiBacked<Appliance>[]>>;
+  maintenanceTasks: ApiBacked<MaintenanceTask>[];
+  setMaintenanceTasks: React.Dispatch<React.SetStateAction<ApiBacked<MaintenanceTask>[]>>;
+  warranties: ApiBacked<Warranty>[];
+  setWarranties: React.Dispatch<React.SetStateAction<ApiBacked<Warranty>[]>>;
+  expenses: ApiBacked<Expense>[];
+  setExpenses: React.Dispatch<React.SetStateAction<ApiBacked<Expense>[]>>;
+  documents: ApiBacked<Document>[];
+  setDocuments: React.Dispatch<React.SetStateAction<ApiBacked<Document>[]>>;
+  reminders: ApiBacked<Reminder>[];
+  setReminders: React.Dispatch<React.SetStateAction<ApiBacked<Reminder>[]>>;
+  isDataLoading: boolean;
+  dataLoadError: string | null;
 };
 
 export const HomeDataContext = createContext<HomeDataContextValue | null>(null);

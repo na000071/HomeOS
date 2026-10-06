@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
 import { useLocation } from "react-router-dom";
-import { appliancesData } from "../data/appliancesData";
 import Card from "../components/Card";
 import AddDocumentForm, { type DocumentDraft } from "../components/AddDocumentForm";
 import DocumentCard from "../components/DocumentCard";
@@ -19,6 +18,12 @@ import {
 import { filterDocuments, type DocumentFilters } from "../utils/documentFilters";
 import { sortDocuments, type DocumentSortOption } from "../utils/documentSorting";
 import type { SearchNavigationState } from "../types/search";
+import {
+  createDocument as createDocumentApi,
+  deleteDocument,
+  updateDocument as updateDocumentApi,
+  type DocumentWriteData,
+} from "../services/documentsApi";
 
 const defaultDocumentFilters: DocumentFilters = {
   category: "all",
@@ -28,7 +33,7 @@ const defaultDocumentFilters: DocumentFilters = {
 
 function Documents() {
   const location = useLocation();
-  const { documents, setDocuments } = useHomeData();
+  const { documents, setDocuments, appliances, expenses, isDataLoading, dataLoadError } = useHomeData();
   const navigationState = location.state as SearchNavigationState | null;
   const selectedDocumentId = navigationState?.documentId;
   const [isAddDocumentOpen, setIsAddDocumentOpen] = useState(false);
@@ -40,6 +45,7 @@ function Documents() {
   const [editingDocument, setEditingDocument] = useState<Document | null>(null);
   const [filters, setFilters] = useState<DocumentFilters>(defaultDocumentFilters);
   const [sortOption, setSortOption] = useState<DocumentSortOption>("newest");
+  const [operationError, setOperationError] = useState<string | null>(null);
   useEffect(() => {
     setSelectedDocument(
       selectedDocumentId === undefined
@@ -47,6 +53,18 @@ function Documents() {
         : documents.find((document) => document.id === selectedDocumentId) ?? null,
     );
   }, [documents, location.key, selectedDocumentId]);
+
+    const toApiDocument = (document: Document): DocumentWriteData => ({
+      name: document.name,
+      category: document.category,
+      fileType: document.fileType,
+      fileName: document.fileName,
+      dateAdded: document.dateAdded || new Date().toISOString(),
+      description: document.description || null,
+      applianceId: document.applianceId === undefined ? null : appliances.find((item) => item.id === document.applianceId)?.apiId ?? null,
+      expenseId: document.expenseId === undefined ? null : expenses.find((item) => item.id === document.expenseId)?.apiId ?? null,
+      notes: document.notes || null,
+    });
     const documentSummary = getDocumentSummary(documents);
     const categoryBreakdown = getDocumentCategoryBreakdown(documents);
     const filteredDocuments = sortDocuments(filterDocuments(documents, filters), sortOption);
@@ -83,6 +101,18 @@ function Documents() {
             + Add Document
           </button>
         </div>
+
+        {(dataLoadError || operationError) && (
+          <div role="alert" className="mt-6 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+            {operationError ?? dataLoadError}
+          </div>
+        )}
+
+        {isDataLoading && (
+          <div className="mt-6 rounded-xl border border-stone-200 bg-white p-6 text-center text-stone-500">
+            Loading documents...
+          </div>
+        )}
   
         {/* Summary Cards */}
         <div className="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
@@ -166,7 +196,7 @@ function Documents() {
               className="mt-2 w-full rounded-lg border border-stone-200 bg-white px-4 py-3 text-sm text-stone-600 outline-none transition focus:border-[#5E7563] focus-visible:ring-2 focus-visible:ring-[#5E7563] focus-visible:ring-offset-1"
             >
               <option value="all">All appliances</option>
-              {appliancesData.map((appliance) => <option key={appliance.id} value={appliance.id}>{appliance.name} · {appliance.brand}</option>)}
+              {appliances.map((appliance) => <option key={appliance.id} value={appliance.id}>{appliance.name} · {appliance.brand}</option>)}
             </select>
           </div>
 
@@ -202,7 +232,7 @@ function Documents() {
         <section className="mt-6">
           <div className="grid grid-cols-1 gap-4">
           {filteredDocuments.length > 0 ? filteredDocuments.map((document) => (
-            <DocumentCard key={document.id} document={document} onViewDocument={setSelectedDocument} />
+            <DocumentCard key={document.id} document={document} appliances={appliances} onViewDocument={setSelectedDocument} />
           )) : (
             documents.length === 0 ? (
               <DocumentEmptyState
@@ -243,16 +273,15 @@ function Documents() {
         {isAddDocumentOpen && (
           <AddDocumentForm
             onClose={() => setIsAddDocumentOpen(false)}
-            onSave={(document: DocumentDraft) => {
-              setDocuments((currentDocuments) => {
-                const nextId = currentDocuments.reduce(
-                  (highestId, currentDocument) => Math.max(highestId, currentDocument.id),
-                  0,
-                ) + 1;
-
-                return [...currentDocuments, { ...document, id: nextId }];
-              });
-              setIsAddDocumentOpen(false);
+            onSave={async (document: DocumentDraft) => {
+              try {
+                setOperationError(null);
+                const createdDocument = await createDocumentApi(toApiDocument({ ...document, id: Date.now() }));
+                setDocuments((currentDocuments) => [...currentDocuments, { ...document, id: Date.now(), apiId: createdDocument.id }]);
+                setIsAddDocumentOpen(false);
+              } catch {
+                setOperationError("We couldn't save this document. Please try again.");
+              }
             }}
           />
         )}
@@ -261,13 +290,18 @@ function Documents() {
           <EditDocumentForm
             document={editingDocument}
             onClose={() => setEditingDocument(null)}
-            onSave={(updatedDocument) => {
-              setDocuments((currentDocuments) =>
-                currentDocuments.map((currentDocument) =>
-                  currentDocument.id === updatedDocument.id ? updatedDocument : currentDocument,
-                ),
-              );
-              setEditingDocument(null);
+            onSave={async (updatedDocument) => {
+              const currentDocument = documents.find((document) => document.id === updatedDocument.id);
+              if (!currentDocument?.apiId) return;
+
+              try {
+                setOperationError(null);
+                await updateDocumentApi(currentDocument.apiId, toApiDocument(updatedDocument));
+                setDocuments((currentDocuments) => currentDocuments.map((document) => document.id === updatedDocument.id ? { ...updatedDocument, apiId: currentDocument.apiId } : document));
+                setEditingDocument(null);
+              } catch {
+                setOperationError("We couldn't update this document. Please try again.");
+              }
             }}
           />
         )}
@@ -275,12 +309,21 @@ function Documents() {
         {selectedDocument && (
           <DocumentDetails
             document={selectedDocument}
+            appliances={appliances}
+            expenses={expenses}
             onClose={() => setSelectedDocument(null)}
-            onDelete={() => {
-              setDocuments((currentDocuments) =>
-                currentDocuments.filter((currentDocument) => currentDocument.id !== selectedDocument.id),
-              );
-              setSelectedDocument(null);
+            onDelete={async () => {
+              const currentDocument = documents.find((document) => document.id === selectedDocument.id);
+              if (!currentDocument?.apiId) return;
+
+              try {
+                setOperationError(null);
+                await deleteDocument(currentDocument.apiId);
+                setDocuments((currentDocuments) => currentDocuments.filter((document) => document.id !== selectedDocument.id));
+                setSelectedDocument(null);
+              } catch {
+                setOperationError("We couldn't delete this document. Please try again.");
+              }
             }}
             onEdit={() => {
               setEditingDocument(selectedDocument);

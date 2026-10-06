@@ -2,11 +2,12 @@ import Card from "./Card";
 import MaintenanceStatusBadge from "./MaintenanceStatusBadge";
 import type { MaintenanceTask } from "../types/maintenance";
 import { formatMaintenanceDate } from "../services/maintenanceDateService";
-import { getApplianceById } from "../utils/applianceUtils";
+import { getApplianceById, type Appliance } from "../utils/applianceUtils";
 
 type MaintenanceTaskCardProps = {
   task: MaintenanceTask;
   onViewTask: (task: MaintenanceTask) => void;
+  appliances?: Appliance[];
 };
 
 const priorityClasses: Record<MaintenanceTask["priority"], string> = {
@@ -16,8 +17,8 @@ const priorityClasses: Record<MaintenanceTask["priority"], string> = {
   Critical: "text-red-700",
 };
 
-function MaintenanceTaskCard({ task, onViewTask }: MaintenanceTaskCardProps) {
-  const appliance = getApplianceById(task.applianceId);
+function MaintenanceTaskCard({ task, onViewTask, appliances }: MaintenanceTaskCardProps) {
+  const appliance = getApplianceById(task.applianceId, appliances);
 
   return (
     <Card className="border-stone-200/80 p-5 shadow-[0_5px_18px_rgba(72,66,52,0.04)] transition-all duration-200 hover:-translate-y-0.5 hover:border-[#C9D7CB] hover:shadow-[0_12px_28px_rgba(72,66,52,0.09)]">

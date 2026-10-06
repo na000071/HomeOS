@@ -1,7 +1,7 @@
 import type { MaintenanceTask } from "../types/maintenance";
 import { formatMaintenanceDate } from "../services/maintenanceDateService";
 import MaintenanceStatusBadge from "./MaintenanceStatusBadge";
-import { getApplianceById } from "../utils/applianceUtils";
+import { getApplianceById, type Appliance } from "../utils/applianceUtils";
 import { useModalAccessibility } from "../hooks/useModalAccessibility";
 
 type MaintenanceDetailsProps = {
@@ -10,6 +10,7 @@ type MaintenanceDetailsProps = {
   onEdit: () => void;
   onDelete: () => void;
   onMarkCompleted: () => void;
+  appliances?: Appliance[];
 };
 
 function MaintenanceDetails({
@@ -18,6 +19,7 @@ function MaintenanceDetails({
   onEdit,
   onDelete,
   onMarkCompleted,
+  appliances,
 }: MaintenanceDetailsProps) {
   const dialogRef = useModalAccessibility(onClose);
 
@@ -29,7 +31,7 @@ function MaintenanceDetails({
     }
   };
 
-  const appliance = getApplianceById(task.applianceId);
+  const appliance = getApplianceById(task.applianceId, appliances);
 
   const formattedDate = (value: string | null) => {
     return value ? formatMaintenanceDate(value, "long") : "Not completed yet";

@@ -1,5 +1,3 @@
-import { maintenanceData } from "../data/maintenanceData";
-import { warrantiesData } from "../data/warrantiesData";
 import { roomsData } from "../data/roomsData";
 import { formatMaintenanceDate } from "../services/maintenanceDateService";
 import {
@@ -10,6 +8,8 @@ import MaintenanceStatusBadge from "./MaintenanceStatusBadge";
 import WarrantyStatusBadge from "./WarrantyStatusBadge";
 import WarrantyEmptyState from "./WarrantyEmptyState.tsx";
 import type { Appliance } from "../utils/applianceUtils";
+import type { MaintenanceTask } from "../types/maintenance";
+import type { Warranty } from "../types/warranty";
 
 type ApplianceDetailsProps = {
   appliance: Appliance;
@@ -19,6 +19,8 @@ type ApplianceDetailsProps = {
   onAddMaintenance: () => void;
     onViewWarranty: (warrantyId: number) => void;
   onAddWarranty: () => void;
+    maintenanceTasks?: MaintenanceTask[];
+    warranties?: Warranty[];
   };
   
   function ApplianceDetails({
@@ -29,11 +31,13 @@ type ApplianceDetailsProps = {
     onAddMaintenance,
     onViewWarranty,
     onAddWarranty,
+    maintenanceTasks: allMaintenanceTasks = [],
+    warranties = [],
   }: ApplianceDetailsProps) {
-    const maintenanceTasks = maintenanceData.filter(
+    const maintenanceTasks = allMaintenanceTasks.filter(
       (task) => task.applianceId === appliance.id,
     );
-    const applianceWarrantyRecord = warrantiesData.find(
+    const applianceWarrantyRecord = warranties.find(
       (warranty) => warranty.applianceId === appliance.id,
     );
     const applianceWarranty = applianceWarrantyRecord

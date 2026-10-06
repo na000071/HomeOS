@@ -1,7 +1,7 @@
 import { formatMaintenanceDate } from "../services/maintenanceDateService";
 import { getWarrantyExpirationInfo } from "../services/warrantyDateService";
 import type { Warranty } from "../types/warranty.ts";
-import { getApplianceById } from "../utils/applianceUtils";
+import { getApplianceById, type Appliance } from "../utils/applianceUtils";
 import { useModalAccessibility } from "../hooks/useModalAccessibility";
 import WarrantyStatusBadge from "./WarrantyStatusBadge";
 
@@ -10,11 +10,12 @@ type WarrantyDetailsProps = {
   onClose: () => void;
   onEdit: () => void;
   onDelete: () => void;
+  appliances?: Appliance[];
 };
 
-function WarrantyDetails({ warranty, onClose, onEdit, onDelete }: WarrantyDetailsProps) {
+function WarrantyDetails({ warranty, onClose, onEdit, onDelete, appliances }: WarrantyDetailsProps) {
   const dialogRef = useModalAccessibility(onClose);
-  const appliance = getApplianceById(warranty.applianceId);
+  const appliance = getApplianceById(warranty.applianceId, appliances);
   const expirationInfo = getWarrantyExpirationInfo(warranty.endDate);
   const applianceLabel = appliance
     ? `${appliance.brand} ${appliance.name}`

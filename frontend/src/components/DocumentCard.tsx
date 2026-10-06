@@ -3,14 +3,16 @@ import { getDocumentAppliance } from "../utils/documentRelations";
 import { getMissingDocumentFields } from "../utils/documentValidation";
 import Card from "./Card";
 import DocumentEmptyState from "./DocumentEmptyState";
+import type { Appliance } from "../utils/applianceUtils";
 
 type DocumentCardProps = {
   document: Document;
   onViewDocument: (document: Document) => void;
+  appliances?: Appliance[];
 };
 
-function DocumentCard({ document, onViewDocument }: DocumentCardProps) {
-  const appliance = getDocumentAppliance(document);
+function DocumentCard({ document, onViewDocument, appliances }: DocumentCardProps) {
+  const appliance = getDocumentAppliance(document, appliances);
   const hasMissingInformation = getMissingDocumentFields(document).length > 0;
   const hasUnavailableAppliance = document.applianceId !== undefined && !appliance;
 

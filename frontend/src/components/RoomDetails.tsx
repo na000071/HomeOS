@@ -30,9 +30,9 @@ function RoomDetails({ room, onClose, onEdit, onDelete, appliances = appliancesD
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-black/30 p-4">
-      <div ref={dialogRef} role="dialog" aria-modal="true" aria-labelledby="room-details-title" aria-describedby="room-details-description" tabIndex={-1} className="my-auto max-h-[calc(100vh-2rem)] w-full max-w-2xl overflow-y-auto rounded-2xl bg-white p-5 shadow-xl sm:p-6">
-        <div className="flex items-start justify-between gap-4">
+      <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-black/30 p-4">
+      <div ref={dialogRef} role="dialog" aria-modal="true" aria-labelledby="room-details-title" aria-describedby="room-details-description" tabIndex={-1} className="my-auto flex max-h-[calc(100vh-2rem)] w-full max-w-2xl flex-col overflow-hidden rounded-2xl bg-white p-5 shadow-xl sm:p-6">
+        <div className="flex shrink-0 items-start justify-between gap-4">
           <div>
             <p className="text-sm text-stone-500">Home profile</p>
             <h2 id="room-details-title" className="mt-1 text-2xl font-semibold text-sky-950">{room.name}</h2>
@@ -41,6 +41,7 @@ function RoomDetails({ room, onClose, onEdit, onDelete, appliances = appliancesD
           <button type="button" onClick={onClose} aria-label="Close room details" className="shrink-0 rounded-lg p-1 text-2xl leading-none text-stone-500 transition hover:bg-stone-100 hover:text-stone-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1677B8] focus-visible:ring-offset-2">×</button>
         </div>
 
+        <div className="min-h-0 flex-1 overflow-y-auto pr-1">
         <div className="mt-6 grid grid-cols-1 gap-5 sm:grid-cols-2">
           <div>
             <p className="text-sm text-stone-500">Room type</p>
@@ -101,7 +102,9 @@ function RoomDetails({ room, onClose, onEdit, onDelete, appliances = appliancesD
           )}
         </section>
 
-        <div className="mt-8 flex flex-col-reverse justify-end gap-3 border-t border-stone-100 pt-5 sm:flex-row">
+        </div>
+
+        <div className="mt-8 flex shrink-0 flex-col-reverse justify-end gap-3 border-t border-stone-100 bg-white pt-5 sm:flex-row">
           <button type="button" onClick={onEdit} className="rounded-lg border border-[#1677B8] bg-white px-5 py-3 text-sm font-medium text-[#1677B8] transition hover:bg-sky-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1677B8] focus-visible:ring-offset-2">Edit Room</button>
           <button type="button" onClick={handleDelete} className="rounded-lg border border-red-200 bg-red-50 px-5 py-3 text-sm font-medium text-red-700 transition hover:bg-red-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-600 focus-visible:ring-offset-2">Delete Room</button>
           <button type="button" onClick={onClose} className="rounded-lg border border-stone-200 bg-white px-5 py-3 text-sm font-medium text-stone-700 transition hover:bg-stone-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1677B8] focus-visible:ring-offset-2">Close</button>

@@ -12,7 +12,12 @@ import {
   createWarranty,
   withCalculatedWarrantyStatus,
 } from "../services/warrantyDateService";
-import { getApplianceById } from "../utils/applianceUtils";
+import {
+  createWarranty as createWarrantyApi,
+  deleteWarranty,
+  updateWarranty as updateWarrantyApi,
+  type WarrantyWriteData,
+} from "../services/warrantiesApi";
 import type { Warranty } from "../types/warranty.ts";
 import { warrantyStatuses } from "../types/warranty.ts";
 import type { SearchNavigationState } from "../types/search";
@@ -24,7 +29,7 @@ import {
 
 function Warranties() {
   const location = useLocation();
-  const { warranties, setWarranties } = useHomeData();
+  const { warranties, setWarranties, appliances, isDataLoading, dataLoadError } = useHomeData();
   const warrantyNavigationState = location.state as SearchNavigationState | null;
   const warrantyId = warrantyNavigationState?.warrantyId;
     const initialWarranty = warrantyNavigationState?.warrantyId
@@ -49,39 +54,72 @@ function Warranties() {
       provider: "all",
     });
     const [sortOption, setSortOption] = useState<WarrantySortOption>("expirationAsc");
+    const [operationError, setOperationError] = useState<string | null>(null);
 
-    const handleSaveWarranty = (warrantyDraft: WarrantyDraft) => {
+    const toApiWarranty = (warranty: Warranty, status?: string): WarrantyWriteData => ({
+      applianceId: warranty.applianceId
+        ? appliances.find((appliance) => appliance.id === warranty.applianceId)?.apiId ?? null
+        : null,
+      provider: warranty.provider,
+      warrantyType: warranty.warrantyType,
+      startDate: warranty.startDate,
+      endDate: warranty.endDate,
+      coverage: warranty.coverage,
+      notes: warranty.notes || null,
+      status,
+    });
+
+    const handleSaveWarranty = async (warrantyDraft: WarrantyDraft) => {
       const warranty = createWarranty({
         ...warrantyDraft,
         applianceId: warrantyDraft.applianceId as number,
       });
 
-      setWarranties((currentWarranties) => [warranty, ...currentWarranties]);
-      setIsFormOpen(false);
+      try {
+        setOperationError(null);
+        const createdWarranty = await createWarrantyApi(toApiWarranty(warranty, "Active"));
+        setWarranties((currentWarranties) => [{ ...warranty, apiId: createdWarranty.id }, ...currentWarranties]);
+        setIsFormOpen(false);
+      } catch {
+        setOperationError("We couldn't save this warranty. Please try again.");
+      }
     };
 
-    const handleUpdateWarranty = (updatedWarranty: Warranty) => {
+    const handleUpdateWarranty = async (updatedWarranty: Warranty) => {
       const warrantyWithUpdatedStatus = withCalculatedWarrantyStatus(updatedWarranty);
+      const currentWarranty = warranties.find((item) => item.id === updatedWarranty.id);
+      if (!currentWarranty?.apiId) return;
 
-      setWarranties((currentWarranties) =>
-        currentWarranties.map((currentWarranty) =>
-          currentWarranty.id === warrantyWithUpdatedStatus.id
-            ? warrantyWithUpdatedStatus
-            : currentWarranty,
-        ),
-      );
-      setEditingWarranty(null);
-      setSelectedWarranty(null);
+      try {
+        setOperationError(null);
+        await updateWarrantyApi(currentWarranty.apiId, toApiWarranty(warrantyWithUpdatedStatus, warrantyWithUpdatedStatus.status));
+        setWarranties((currentWarranties) =>
+          currentWarranties.map((item) =>
+            item.id === warrantyWithUpdatedStatus.id ? { ...warrantyWithUpdatedStatus, apiId: currentWarranty.apiId } : item,
+          ),
+        );
+        setEditingWarranty(null);
+        setSelectedWarranty(null);
+      } catch {
+        setOperationError("We couldn't update this warranty. Please try again.");
+      }
     };
 
-    const handleDeleteWarranty = (warrantyId: number) => {
-      setWarranties((currentWarranties) =>
-        currentWarranties.filter((warranty) => warranty.id !== warrantyId),
-      );
-      setSelectedWarranty(null);
-      setEditingWarranty((currentEditingWarranty) =>
-        currentEditingWarranty?.id === warrantyId ? null : currentEditingWarranty,
-      );
+    const handleDeleteWarranty = async (warrantyId: number) => {
+      const warranty = warranties.find((item) => item.id === warrantyId);
+      if (!warranty?.apiId) return;
+
+      try {
+        setOperationError(null);
+        await deleteWarranty(warranty.apiId);
+        setWarranties((currentWarranties) => currentWarranties.filter((item) => item.id !== warrantyId));
+        setSelectedWarranty(null);
+        setEditingWarranty((currentEditingWarranty) =>
+          currentEditingWarranty?.id === warrantyId ? null : currentEditingWarranty,
+        );
+      } catch {
+        setOperationError("We couldn't delete this warranty. Please try again.");
+      }
     };
 
     const currentWarranties = warranties.map((warranty) => withCalculatedWarrantyStatus(warranty));
@@ -89,7 +127,7 @@ function Warranties() {
     const applianceOptions = Array.from(
       new Map(
         currentWarranties.map((warranty) => {
-          const appliance = getApplianceById(warranty.applianceId);
+          const appliance = appliances.find((item) => item.id === warranty.applianceId);
           return [warranty.applianceId, appliance];
         }),
       ).values(),
@@ -126,6 +164,18 @@ function Warranties() {
             </div>
             <Button onClick={() => setIsFormOpen(true)}>+ Add Warranty</Button>
           </header>
+
+          {(dataLoadError || operationError) && (
+            <div role="alert" className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+              {operationError ?? dataLoadError}
+            </div>
+          )}
+
+          {isDataLoading && (
+            <div className="rounded-xl border border-stone-200 bg-white p-6 text-center text-stone-500">
+              Loading warranties...
+            </div>
+          )}
 
           <section
             aria-label="Warranty summary"
@@ -250,6 +300,7 @@ function Warranties() {
                   <WarrantyCard
                     key={warranty.id}
                     warranty={warranty}
+                    appliances={appliances}
                     onViewWarranty={setSelectedWarranty}
                   />
               ))}
@@ -260,6 +311,7 @@ function Warranties() {
             <AddWarrantyForm
               onClose={() => setIsFormOpen(false)}
               onSave={handleSaveWarranty}
+              applianceOptions={appliances}
               initialValues={{
                 applianceId: warrantyNavigationState?.applianceId ?? null,
               }}
@@ -275,6 +327,7 @@ function Warranties() {
                 setSelectedWarranty(null);
               }}
               onDelete={() => handleDeleteWarranty(selectedWarranty.id)}
+              appliances={appliances}
             />
           )}
 
@@ -283,6 +336,7 @@ function Warranties() {
               warranty={editingWarranty}
               onClose={() => setEditingWarranty(null)}
               onSave={handleUpdateWarranty}
+              applianceOptions={appliances}
             />
           )}
       </div>

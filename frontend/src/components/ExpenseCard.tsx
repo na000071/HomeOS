@@ -2,18 +2,19 @@ import Card from "./Card";
 import ExpenseEmptyState from "./ExpenseEmptyState";
 import type { Expense } from "../types/expense";
 import type { MaintenanceTask } from "../types/maintenance";
-import { getApplianceById } from "../utils/applianceUtils";
+import { getApplianceById, type Appliance } from "../utils/applianceUtils";
 import { formatExpenseAmount } from "../utils/expenseFormatting";
 
 type ExpenseCardProps = {
   expense: Expense;
   onViewExpense: (expense: Expense) => void;
   maintenanceTasks?: MaintenanceTask[];
+  appliances?: Appliance[];
 };
 
-function ExpenseCard({ expense, onViewExpense, maintenanceTasks = [] }: ExpenseCardProps) {
+function ExpenseCard({ expense, onViewExpense, maintenanceTasks = [], appliances }: ExpenseCardProps) {
   const appliance = expense.applianceId !== undefined
-    ? getApplianceById(expense.applianceId)
+    ? getApplianceById(expense.applianceId, appliances)
     : undefined;
   const maintenanceTask = expense.maintenanceTaskId === undefined
     ? undefined
