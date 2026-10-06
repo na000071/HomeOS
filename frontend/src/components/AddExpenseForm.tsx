@@ -1,6 +1,4 @@
 import { useState } from "react";
-import { appliancesData } from "../data/appliancesData";
-import { maintenanceData } from "../data/maintenanceData";
 import { useModalAccessibility } from "../hooks/useModalAccessibility";
 import { expenseCategories, type Expense, type ExpenseCategory } from "../types/expense";
 import type { MaintenanceTask } from "../types/maintenance";
@@ -33,8 +31,8 @@ function AddExpenseForm({
   onClose,
   onSave,
   initialValues,
-  applianceOptions = appliancesData,
-  maintenanceTaskOptions = maintenanceData,
+  applianceOptions = [],
+  maintenanceTaskOptions = [],
   title = "Add Expense",
   description = "Record a home-related expense and its optional connections.",
   submitLabel = "Save Expense",

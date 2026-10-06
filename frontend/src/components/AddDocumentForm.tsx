@@ -1,6 +1,4 @@
 import { useState } from "react";
-import { appliancesData } from "../data/appliancesData";
-import { expensesData } from "../data/expensesData";
 import { useModalAccessibility } from "../hooks/useModalAccessibility";
 import {
   documentCategories,
@@ -9,6 +7,8 @@ import {
   type DocumentCategory,
   type DocumentFileType,
 } from "../types/document";
+import type { Appliance } from "../utils/applianceUtils";
+import type { Expense } from "../types/expense";
 
 export type DocumentDraft = Omit<Document, "id">;
 
@@ -24,6 +24,8 @@ type AddDocumentFormProps = {
   title?: string;
   description?: string;
   submitLabel?: string;
+  applianceOptions?: Appliance[];
+  expenseOptions?: Expense[];
 };
 
 const defaultFormValues: DocumentFormValues = {
@@ -59,6 +61,8 @@ function AddDocumentForm({
   title = "Add Document",
   description = "Add metadata for a home document.",
   submitLabel = "Save Document",
+  applianceOptions = [],
+  expenseOptions = [],
 }: AddDocumentFormProps) {
   const dialogRef = useModalAccessibility(onClose);
   const [formValues, setFormValues] = useState<DocumentFormValues>(() => getInitialFormValues(initialDocument));
@@ -221,7 +225,7 @@ function AddDocumentForm({
                 className={inputClass}
               >
                 <option value="">No appliance</option>
-                {appliancesData.map((appliance) => <option key={appliance.id} value={appliance.id}>{appliance.name} · {appliance.brand}</option>)}
+                {applianceOptions.map((appliance) => <option key={appliance.id} value={appliance.id}>{appliance.name} · {appliance.brand}</option>)}
               </select>
             </div>
 
@@ -234,7 +238,7 @@ function AddDocumentForm({
                 className={inputClass}
               >
                 <option value="">No expense</option>
-                {expensesData.map((expense) => <option key={expense.id} value={expense.id}>{expense.description} · {expense.date}</option>)}
+                {expenseOptions.map((expense) => <option key={expense.id} value={expense.id}>{expense.description} · {expense.date}</option>)}
               </select>
             </div>
 

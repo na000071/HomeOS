@@ -5,12 +5,15 @@ import type { Warranty } from "../types/warranty.ts";
 import type { Document } from "../types/document";
 import type { Reminder } from "../types/reminder";
 import type { Appliance } from "../utils/applianceUtils";
+import type { Room } from "../types/room";
 
 export type ApiBacked<T> = T & { apiId?: string };
 
 export type HomeDataContextValue = {
   appliances: ApiBacked<Appliance>[];
   setAppliances: React.Dispatch<React.SetStateAction<ApiBacked<Appliance>[]>>;
+  rooms: ApiBacked<Room>[];
+  setRooms: React.Dispatch<React.SetStateAction<ApiBacked<Room>[]>>;
   maintenanceTasks: ApiBacked<MaintenanceTask>[];
   setMaintenanceTasks: React.Dispatch<React.SetStateAction<ApiBacked<MaintenanceTask>[]>>;
   warranties: ApiBacked<Warranty>[];

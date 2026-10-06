@@ -1,10 +1,9 @@
-import { warrantiesData } from "../data/warrantiesData";
 import {
   getWarrantyExpirationInfo,
   withCalculatedWarrantyStatus,
 } from "../services/warrantyDateService";
 import type { Warranty } from "../types/warranty.ts";
-import { getApplianceById } from "./applianceUtils";
+import { getApplianceById, type Appliance } from "./applianceUtils";
 
 export type DashboardWarranty = Warranty & {
   applianceName: string;
@@ -22,11 +21,12 @@ export type WarrantyDashboardData = {
 };
 
 export const getWarrantyDashboardData = (
-  warranties: Warranty[] = warrantiesData,
+  warranties: Warranty[],
+  appliances: Appliance[] = [],
 ): WarrantyDashboardData => {
   const currentWarranties: DashboardWarranty[] = warranties.map((warranty) => {
     const calculatedWarranty = withCalculatedWarrantyStatus(warranty);
-    const appliance = getApplianceById(warranty.applianceId);
+    const appliance = getApplianceById(warranty.applianceId, appliances);
     const expirationInfo = getWarrantyExpirationInfo(warranty.endDate);
 
     return {

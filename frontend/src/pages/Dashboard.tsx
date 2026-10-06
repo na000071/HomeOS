@@ -18,8 +18,18 @@ const currencyFormatter = new Intl.NumberFormat("en-US", {
 });
 
 function Dashboard() {
-  const { appliances, maintenanceTasks, warranties, expenses, documents, reminders } = useHomeData();
-  const warrantyDashboard = getWarrantyDashboardData(warranties);
+  const {
+    appliances,
+    rooms,
+    maintenanceTasks,
+    warranties,
+    expenses,
+    documents,
+    reminders,
+    isDataLoading,
+    dataLoadError,
+  } = useHomeData();
+  const warrantyDashboard = getWarrantyDashboardData(warranties, appliances);
   const maintenanceDashboard = getMaintenanceDashboardData(maintenanceTasks);
   const expenseDashboard = getExpenseDashboardData(expenses);
   const recentDocuments = sortDocuments(documents, "newest").slice(0, 3);
@@ -48,14 +58,28 @@ function Dashboard() {
             + Add Item
           </button>
         </div>
+
+        {dataLoadError && (
+          <div role="alert" className="mt-6 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+            {dataLoadError}
+          </div>
+        )}
+
+        {isDataLoading && (
+          <div className="mt-6 rounded-xl border border-stone-200 bg-white p-6 text-center text-stone-500">
+            Loading dashboard data...
+          </div>
+        )}
   
         {/* Overview Cards */}
         <div className="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {[
             ["Appliances", appliances.length, "Total appliances"],
+            ["Rooms", rooms.length, "Total rooms"],
             ["Maintenance", maintenanceDashboard.total, "Total maintenance tasks"],
             ["Warranties", warrantyDashboard.total, "Total warranties"],
             ["Expenses", `$${expenseDashboard.total.toFixed(2)}`, "Tracked expenses"],
+            ["Documents", documents.length, "Total documents"],
           ].map(([title, value, description]) => (
             <Card key={title} className="p-5">
               <p className="text-sm text-stone-500">{title}</p>

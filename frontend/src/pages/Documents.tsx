@@ -273,6 +273,8 @@ function Documents() {
         {isAddDocumentOpen && (
           <AddDocumentForm
             onClose={() => setIsAddDocumentOpen(false)}
+            applianceOptions={appliances}
+            expenseOptions={expenses}
             onSave={async (document: DocumentDraft) => {
               try {
                 setOperationError(null);
@@ -290,6 +292,8 @@ function Documents() {
           <EditDocumentForm
             document={editingDocument}
             onClose={() => setEditingDocument(null)}
+            applianceOptions={appliances}
+            expenseOptions={expenses}
             onSave={async (updatedDocument) => {
               const currentDocument = documents.find((document) => document.id === updatedDocument.id);
               if (!currentDocument?.apiId) return;

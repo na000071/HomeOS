@@ -5,6 +5,7 @@ import type { Warranty } from "../types/warranty.ts";
 import type { Document } from "../types/document";
 import type { Reminder } from "../types/reminder";
 import type { Appliance } from "../utils/applianceUtils";
+import type { Room, RoomType } from "../types/room";
 import { HomeDataContext, type ApiBacked } from "./homeDataContext";
 import { getAppliances } from "../services/appliancesApi";
 import { getMaintenanceTasks } from "../services/maintenanceApi";
@@ -12,6 +13,7 @@ import { getWarranties } from "../services/warrantiesApi";
 import { getExpenses } from "../services/expensesApi";
 import { getDocuments } from "../services/documentsApi";
 import { getReminders } from "../services/remindersApi";
+import { getRooms } from "../services/roomsApi";
 import type { MaintenanceFrequency, MaintenancePriority, MaintenanceStatus } from "../types/maintenance";
 import type { WarrantyStatus } from "../types/warranty";
 import type { ExpenseCategory } from "../types/expense";
@@ -28,6 +30,7 @@ const dateOnly = (value: string | null): string => value?.split("T")[0] ?? "";
 
 export function HomeDataProvider({ children }: { children: React.ReactNode }) {
   const [appliances, setAppliances] = useState<ApiBacked<Appliance>[]>([]);
+  const [rooms, setRooms] = useState<ApiBacked<Room>[]>([]);
   const [maintenanceTasks, setMaintenanceTasks] = useState<ApiBacked<MaintenanceTask>[]>([]);
   const [warranties, setWarranties] = useState<ApiBacked<Warranty>[]>([]);
   const [expenses, setExpenses] = useState<ApiBacked<Expense>[]>([]);
@@ -40,9 +43,13 @@ export function HomeDataProvider({ children }: { children: React.ReactNode }) {
     let isCurrent = true;
 
     const loadData = async () => {
+      setDataLoadError(null);
+      setIsDataLoading(true);
+
       try {
-        const [apiAppliances, apiTasks, apiWarranties, apiExpenses, apiDocuments, apiReminders] = await Promise.all([
+        const [apiAppliances, apiRooms, apiTasks, apiWarranties, apiExpenses, apiDocuments, apiReminders] = await Promise.all([
           getAppliances(),
+          getRooms(),
           getMaintenanceTasks(),
           getWarranties(),
           getExpenses(),
@@ -51,6 +58,8 @@ export function HomeDataProvider({ children }: { children: React.ReactNode }) {
         ]);
 
         if (!isCurrent) return;
+
+        setDataLoadError(null);
 
         setAppliances(apiAppliances.map((item) => ({
           apiId: item.id,
@@ -66,6 +75,14 @@ export function HomeDataProvider({ children }: { children: React.ReactNode }) {
           serialNumber: item.serialNumber ?? "",
           purchasePrice: item.purchasePrice.toString(),
           notes: item.notes ?? "",
+        })));
+        setRooms(apiRooms.map((item) => ({
+          apiId: item.id,
+          id: toNumericId(item.id),
+          name: item.name,
+          description: item.description ?? "",
+          type: item.type as RoomType,
+          icon: item.icon ?? "room",
         })));
         setMaintenanceTasks(apiTasks.map((item) => ({
           apiId: item.id,
@@ -146,6 +163,8 @@ export function HomeDataProvider({ children }: { children: React.ReactNode }) {
     () => ({
       appliances,
       setAppliances,
+      rooms,
+      setRooms,
       maintenanceTasks,
       setMaintenanceTasks,
       warranties,
@@ -159,7 +178,7 @@ export function HomeDataProvider({ children }: { children: React.ReactNode }) {
       isDataLoading,
       dataLoadError,
     }),
-    [appliances, maintenanceTasks, warranties, expenses, documents, reminders, isDataLoading, dataLoadError],
+    [appliances, rooms, maintenanceTasks, warranties, expenses, documents, reminders, isDataLoading, dataLoadError],
   );
 
   return <HomeDataContext.Provider value={value}>{children}</HomeDataContext.Provider>;

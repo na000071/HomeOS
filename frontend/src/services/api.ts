@@ -29,7 +29,11 @@ const parseResponseBody = async (response: Response): Promise<unknown> => {
   try {
     return JSON.parse(responseText) as unknown;
   } catch {
-    return responseText;
+    if (!response.ok) {
+      return responseText;
+    }
+
+    throw new ApiError(response.status, response.statusText, "The API returned invalid JSON.");
   }
 };
 

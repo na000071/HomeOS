@@ -14,7 +14,6 @@ import type { SearchNavigationState } from "../types/search";
 import {
   createAppliance,
   deleteAppliance,
-  getAppliances,
   updateAppliance,
   type ApplianceApiModel,
   type ApplianceWriteData,
@@ -69,11 +68,16 @@ const toApiAppliance = (appliance: ApplianceFormValues): ApplianceWriteData => (
 function Appliances() {
   const navigate = useNavigate();
     const location = useLocation();
-    const { maintenanceTasks, warranties } = useHomeData();
+    const {
+      appliances,
+      setAppliances,
+      maintenanceTasks,
+      warranties,
+      isDataLoading,
+      dataLoadError,
+    } = useHomeData();
     const navigationState = location.state as SearchNavigationState | null;
     const selectedApplianceId = navigationState?.applianceId;
-    const [appliances, setAppliances] = useState<ApiBackedAppliance[]>([]);
-    const [isLoading, setIsLoading] = useState(true);
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
     const [showForm, setShowForm] = useState(false);
     const [selectedAppliance, setSelectedAppliance] = useState<Appliance | null>(() =>
@@ -87,36 +91,6 @@ function Appliances() {
       room: "all",
       category: "all",
     });
-
-    useEffect(() => {
-      let isCurrent = true;
-
-      const loadAppliances = async () => {
-        setIsLoading(true);
-        setErrorMessage(null);
-
-        try {
-          const apiAppliances = await getAppliances();
-          if (isCurrent) {
-            setAppliances(apiAppliances.map((appliance) => toUiAppliance(appliance)));
-          }
-        } catch {
-          if (isCurrent) {
-            setErrorMessage("We couldn't load your appliances. Please try again.");
-          }
-        } finally {
-          if (isCurrent) {
-            setIsLoading(false);
-          }
-        }
-      };
-
-      void loadAppliances();
-
-      return () => {
-        isCurrent = false;
-      };
-    }, []);
 
     const handleAddAppliance = async (appliance: ApplianceFormValues) => {
       try {
@@ -142,7 +116,7 @@ function Appliances() {
 
     const handleDeleteAppliance = async (applianceId: number) => {
       const appliance = appliances.find((currentAppliance) => currentAppliance.id === applianceId);
-      if (!appliance) return;
+      if (!appliance?.apiId) return;
 
       try {
         setErrorMessage(null);
@@ -236,12 +210,12 @@ function Appliances() {
   
         {/* Appliance Grid */}
         <section className="mt-6">
-            {errorMessage && (
+            {(dataLoadError || errorMessage) && (
               <div role="alert" className="mb-6 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
-                {errorMessage}
+                {errorMessage ?? dataLoadError}
               </div>
             )}
-            {isLoading ? (
+            {isDataLoading ? (
               <div className="mt-6 rounded-xl border border-stone-200 bg-white p-8 text-center text-stone-500">
                 Loading appliances...
               </div>

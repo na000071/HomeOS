@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { appliancesData } from "../data/appliancesData";
 import { maintenanceFrequencies } from "../types/maintenance";
 import type { ApplianceSummary } from "../utils/applianceUtils";
 import { useModalAccessibility } from "../hooks/useModalAccessibility";
@@ -25,12 +24,6 @@ type AddMaintenanceFormProps = {
   initialValues?: Partial<MaintenanceTaskDraft>;
 };
 
-const defaultApplianceOptions: ApplianceSummary[] = appliancesData.map((appliance) => ({
-  id: appliance.id,
-  name: appliance.name,
-  brand: appliance.brand,
-}));
-
 const defaultFormValues: MaintenanceTaskDraft = {
   title: "",
   description: "",
@@ -44,7 +37,7 @@ const defaultFormValues: MaintenanceTaskDraft = {
 function AddMaintenanceForm({
   onClose,
   onSave,
-  applianceOptions = defaultApplianceOptions,
+  applianceOptions = [],
   initialValues,
 }: AddMaintenanceFormProps) {
   const dialogRef = useModalAccessibility(onClose);
