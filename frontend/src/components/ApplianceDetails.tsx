@@ -48,9 +48,9 @@ type ApplianceDetailsProps = {
 
     return (
       <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 p-6">
-        <div className="w-full max-w-2xl rounded-2xl bg-white p-8 shadow-xl">
+        <div className="flex max-h-[calc(100vh-3rem)] w-full max-w-2xl flex-col overflow-hidden rounded-2xl bg-white p-8 shadow-xl">
           
-          <div className="flex items-start justify-between">
+          <div className="flex shrink-0 items-start justify-between">
             <div>
               <p className="text-sm text-stone-400">
                 {appliance.category}
@@ -72,7 +72,8 @@ type ApplianceDetailsProps = {
               ×
             </button>
           </div>
-  
+
+          <div className="min-h-0 flex-1 overflow-y-auto pr-1">
           <div className="mt-8 grid grid-cols-2 gap-6">
             <div>
               <p className="text-sm text-stone-400">Model</p>
@@ -221,8 +222,10 @@ type ApplianceDetailsProps = {
               />
             )}
           </div>
+
+          </div>
   
-          <div className="mt-8 flex justify-end gap-3">
+          <div className="mt-8 flex shrink-0 flex-wrap justify-end gap-3 border-t border-stone-100 bg-white pt-6">
             <button
               onClick={onDelete}
               className="rounded-lg border border-red-200 bg-red-50 px-5 py-3 text-sm font-medium text-red-700 hover:bg-red-100"

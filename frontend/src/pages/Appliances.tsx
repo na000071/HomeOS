@@ -10,16 +10,63 @@ import {
   type Appliance,
   type ApplianceFormValues,
 } from "../utils/applianceUtils";
-import { useHomeData } from "../context/useHomeData";
 import type { SearchNavigationState } from "../types/search";
+import {
+  createAppliance,
+  deleteAppliance,
+  getAppliances,
+  updateAppliance,
+  type ApplianceApiModel,
+  type ApplianceWriteData,
+} from "../services/appliancesApi";
+import { roomsData } from "../data/roomsData";
 
+type ApiBackedAppliance = Appliance & { apiId: string };
+
+const toDateInputValue = (date: string): string => date.split("T")[0] ?? "";
+
+const isGuid = (value: string | undefined): value is string =>
+  value !== undefined && /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
+
+const toUiAppliance = (appliance: ApplianceApiModel, fallbackId: number): ApiBackedAppliance => ({
+  apiId: appliance.id,
+  id: fallbackId,
+  name: appliance.name,
+  brand: appliance.brand,
+  room: roomsData.find((room) => room.id.toString() === appliance.roomId)?.name ?? "",
+  roomId: appliance.roomId ?? undefined,
+  warranty: appliance.warranty,
+  model: appliance.model ?? "",
+  purchaseDate: toDateInputValue(appliance.purchaseDate),
+  category: appliance.category,
+  serialNumber: appliance.serialNumber ?? "",
+  purchasePrice: appliance.purchasePrice.toString(),
+  notes: appliance.notes ?? "",
+});
+
+const toApiAppliance = (appliance: ApplianceFormValues): ApplianceWriteData => ({
+  name: appliance.name,
+  brand: appliance.brand,
+  model: appliance.model || null,
+  roomId: isGuid(appliance.roomId) ? appliance.roomId : null,
+  warranty: appliance.warranty,
+  purchaseDate: appliance.purchaseDate
+    ? new Date(appliance.purchaseDate).toISOString()
+    : new Date().toISOString(),
+  category: appliance.category,
+  serialNumber: appliance.serialNumber || null,
+  purchasePrice: Number(appliance.purchasePrice),
+  notes: appliance.notes || null,
+});
 
 function Appliances() {
   const navigate = useNavigate();
     const location = useLocation();
-    const { appliances, setAppliances } = useHomeData();
     const navigationState = location.state as SearchNavigationState | null;
     const selectedApplianceId = navigationState?.applianceId;
+    const [appliances, setAppliances] = useState<ApiBackedAppliance[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
+    const [errorMessage, setErrorMessage] = useState<string | null>(null);
     const [showForm, setShowForm] = useState(false);
     const [selectedAppliance, setSelectedAppliance] = useState<Appliance | null>(() =>
       selectedApplianceId === undefined
@@ -33,17 +80,49 @@ function Appliances() {
       category: "all",
     });
 
-    const handleAddAppliance = (appliance: ApplianceFormValues) => {
+    useEffect(() => {
+      let isCurrent = true;
+
+      const loadAppliances = async () => {
+        setIsLoading(true);
+        setErrorMessage(null);
+
+        try {
+          const apiAppliances = await getAppliances();
+          if (isCurrent) {
+            setAppliances(apiAppliances.map((appliance, index) => toUiAppliance(appliance, index + 1)));
+          }
+        } catch {
+          if (isCurrent) {
+            setErrorMessage("We couldn't load your appliances. Please try again.");
+          }
+        } finally {
+          if (isCurrent) {
+            setIsLoading(false);
+          }
+        }
+      };
+
+      void loadAppliances();
+
+      return () => {
+        isCurrent = false;
+      };
+    }, []);
+
+    const handleAddAppliance = async (appliance: ApplianceFormValues) => {
+      try {
+        setErrorMessage(null);
+        const createdAppliance = await createAppliance(toApiAppliance(appliance));
         setAppliances((currentAppliances) => [
           ...currentAppliances,
-          {
-            ...appliance,
-            id: Date.now(),
-          },
+          toUiAppliance(createdAppliance, currentAppliances.length + 1),
         ]);
-    
         setShowForm(false);
-      };
+      } catch {
+        setErrorMessage("We couldn't save this appliance. Please check the details and try again.");
+      }
+    };
 
     useEffect(() => {
       setSelectedAppliance(
@@ -53,12 +132,20 @@ function Appliances() {
       );
     }, [appliances, location.key, selectedApplianceId]);
 
-    const handleDeleteAppliance = (applianceId: number) => {
-      setAppliances((currentAppliances) =>
-        currentAppliances.filter((currentAppliance) => currentAppliance.id !== applianceId)
-      );
+    const handleDeleteAppliance = async (applianceId: number) => {
+      const appliance = appliances.find((currentAppliance) => currentAppliance.id === applianceId);
+      if (!appliance) return;
 
-      setSelectedAppliance(null);
+      try {
+        setErrorMessage(null);
+        await deleteAppliance(appliance.apiId);
+        setAppliances((currentAppliances) =>
+          currentAppliances.filter((currentAppliance) => currentAppliance.apiId !== appliance.apiId),
+        );
+        setSelectedAppliance(null);
+      } catch {
+        setErrorMessage("We couldn't delete this appliance. Please try again.");
+      }
     };
 
     const filteredAppliances = filterAppliances(appliances, filters);
@@ -141,6 +228,17 @@ function Appliances() {
   
         {/* Appliance Grid */}
         <section className="mt-6">
+            {errorMessage && (
+              <div role="alert" className="mb-6 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+                {errorMessage}
+              </div>
+            )}
+            {isLoading ? (
+              <div className="mt-6 rounded-xl border border-stone-200 bg-white p-8 text-center text-stone-500">
+                Loading appliances...
+              </div>
+            ) : (
+              <>
              <div className="mt-6 grid grid-cols-1 gap-4 lg:grid-cols-2">
                 {filteredAppliances.map((appliance) => (
                     <Card key={appliance.id} className="p-5">
@@ -209,6 +307,8 @@ function Appliances() {
                 </p>
               </div>
             )}
+              </>
+            )}
         </section>
         {showForm && (
             <AddApplianceForm
@@ -221,16 +321,27 @@ function Appliances() {
           <EditApplianceForm
             appliance={editingAppliance}
             onClose={() => setEditingAppliance(null)}
-            onSave={(updatedAppliance) => {
-              setAppliances((currentAppliances) =>
-                currentAppliances.map((currentAppliance) =>
-                  currentAppliance.id === editingAppliance.id
-                    ? { ...currentAppliance, ...updatedAppliance }
-                    : currentAppliance
-                )
-              );
+            onSave={async (updatedAppliance) => {
+              const apiId = appliances.find(
+                (currentAppliance) => currentAppliance.id === editingAppliance.id,
+              )?.apiId;
 
-              setEditingAppliance(null);
+              if (!apiId) return;
+
+              try {
+                setErrorMessage(null);
+                await updateAppliance(apiId, toApiAppliance(updatedAppliance));
+                setAppliances((currentAppliances) =>
+                  currentAppliances.map((currentAppliance) =>
+                    currentAppliance.apiId === apiId
+                      ? { ...currentAppliance, ...updatedAppliance, apiId }
+                      : currentAppliance,
+                  ),
+                );
+                setEditingAppliance(null);
+              } catch {
+                setErrorMessage("We couldn't update this appliance. Please check the details and try again.");
+              }
             }}
           />
         )}
