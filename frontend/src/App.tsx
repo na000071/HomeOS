@@ -1,6 +1,8 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Sidebar from "./components/Sidebar";
 import GlobalSearch from "./components/GlobalSearch";
+import ProtectedRoute from "./components/ProtectedRoute";
+import { AuthProvider } from "./context/AuthContext";
 import { HomeDataProvider } from "./context/HomeDataProvider";
 
 import Dashboard from "./pages/Dashboard";
@@ -12,13 +14,14 @@ import Warranties from "./pages/Warranties";
 import Expenses from "./pages/Expenses";
 import Documents from "./pages/Documents";
 import Reminders from "./pages/Reminders";
+import Login from "./pages/Login";
+import Register from "./pages/Register";
 
-function App() {
+function FeatureRoutes() {
   return (
-    <BrowserRouter>
-      <HomeDataProvider>
-        <div className="flex min-h-screen flex-col bg-transparent md:flex-row">
-          <Sidebar />
+    <HomeDataProvider>
+      <div className="flex min-h-screen flex-col bg-transparent md:flex-row">
+        <Sidebar />
 
         <main className="min-w-0 flex-1 p-4 sm:p-6 lg:p-8">
           <GlobalSearch />
@@ -34,8 +37,28 @@ function App() {
             <Route path="/reminders" element={<Reminders />} />
           </Routes>
         </main>
-        </div>
-      </HomeDataProvider>
+      </div>
+    </HomeDataProvider>
+  );
+}
+
+function App() {
+  return (
+    <BrowserRouter>
+      <AuthProvider>
+        <Routes>
+          <Route path="/login" element={<Login />} />
+          <Route path="/register" element={<Register />} />
+          <Route
+            path="*"
+            element={
+              <ProtectedRoute>
+                <FeatureRoutes />
+              </ProtectedRoute>
+            }
+          />
+        </Routes>
+      </AuthProvider>
     </BrowserRouter>
   );
 }

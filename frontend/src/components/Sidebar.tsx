@@ -1,4 +1,5 @@
-import { Link, NavLink } from "react-router-dom";
+import { Link, NavLink, useNavigate } from "react-router-dom";
+import { useAuth } from "../hooks/useAuth";
 
 const navigation = [
   { name: "Dashboard", path: "/dashboard" },
@@ -12,6 +13,14 @@ const navigation = [
 ];
 
 function Sidebar() {
+  const navigate = useNavigate();
+  const { logout } = useAuth();
+
+  const handleLogout = () => {
+    logout();
+    navigate("/login", { replace: true });
+  };
+
   return (
     <aside className="flex w-full shrink-0 flex-col border-b border-sky-200/80 bg-gradient-to-b from-[#eaf7ff]/95 via-[#d7effb]/95 to-[#c5e5f5]/95 p-4 backdrop-blur-sm md:min-h-screen md:w-64 md:border-b-0 md:border-r md:p-5">
       <div className="mb-5 border-b border-stone-200/80 px-3 pb-5 md:mb-10 md:pb-7">
@@ -51,8 +60,8 @@ function Sidebar() {
         </ul>
       </nav>
 
-      <button type="button" className="mt-4 hidden rounded-xl px-4 py-3 text-left text-sm text-stone-600 transition hover:bg-white/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#5E7563] focus-visible:ring-offset-2 md:mt-0 md:block">
-        Settings
+      <button type="button" onClick={handleLogout} className="mt-4 rounded-xl px-4 py-3 text-left text-sm text-stone-600 transition hover:bg-white/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#5E7563] focus-visible:ring-offset-2 md:mt-0 md:block">
+        Log out
       </button>
     </aside>
   );
