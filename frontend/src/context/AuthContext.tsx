@@ -1,4 +1,4 @@
-import { createContext, useEffect, useMemo, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { login as loginRequest, register as registerRequest } from "../services/authApi";
 import { AUTH_TOKEN_STORAGE_KEY, AUTH_USER_STORAGE_KEY } from "../types/auth";
 import type {
@@ -7,16 +7,7 @@ import type {
   LoginRequest,
   RegisterRequest,
 } from "../types/auth";
-
-type AuthContextValue = {
-  user: AuthenticatedUser | null;
-  token: string | null;
-  isAuthenticated: boolean;
-  isRestoring: boolean;
-  login: (request: LoginRequest) => Promise<void>;
-  register: (request: RegisterRequest) => Promise<void>;
-  logout: () => void;
-};
+import { AuthContext, type AuthContextValue } from "./authContextStore";
 
 type StoredAuth = {
   user: AuthenticatedUser;
@@ -105,4 +96,3 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 
-export const AuthContext = createContext<AuthContextValue | null>(null);

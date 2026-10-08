@@ -10,6 +10,7 @@ const navigation = [
   { name: "Expenses", path: "/expenses" },
   { name: "Documents", path: "/documents" },
   { name: "Reminders", path: "/reminders" },
+  { name: "Settings", path: "/settings" },
 ];
 
 function Sidebar() {

@@ -35,3 +35,19 @@ public class AuthResponseDto
     public string Email { get; set; } = string.Empty;
     public string Token { get; set; } = string.Empty;
 }
+
+public class ChangePasswordRequestDto
+{
+    [Required]
+    [DataType(DataType.Password)]
+    public string CurrentPassword { get; set; } = string.Empty;
+
+    [Required]
+    [DataType(DataType.Password)]
+    public string NewPassword { get; set; } = string.Empty;
+
+    [Required]
+    [DataType(DataType.Password)]
+    [Compare(nameof(NewPassword))]
+    public string ConfirmPassword { get; set; } = string.Empty;
+}

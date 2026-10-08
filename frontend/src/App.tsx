@@ -14,6 +14,7 @@ import Warranties from "./pages/Warranties";
 import Expenses from "./pages/Expenses";
 import Documents from "./pages/Documents";
 import Reminders from "./pages/Reminders";
+import Settings from "./pages/Settings";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 
@@ -35,6 +36,7 @@ function FeatureRoutes() {
             <Route path="/expenses" element={<Expenses />} />
             <Route path="/documents" element={<Documents />} />
             <Route path="/reminders" element={<Reminders />} />
+            <Route path="/settings" element={<Settings />} />
           </Routes>
         </main>
       </div>
