@@ -19,3 +19,6 @@ obj/
 # OS
 .DS_Store
 Thumbs.db
+
+# Local document uploads
+backend/HomeOS.Api/uploads/documents/
