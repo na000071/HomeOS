@@ -19,7 +19,7 @@ type DocumentFormValues = Omit<DocumentDraft, "category" | "fileType"> & {
 
 type AddDocumentFormProps = {
   onClose: () => void;
-  onSave: (document: DocumentDraft) => void;
+  onSave: (document: DocumentDraft, file?: File) => void;
   initialDocument?: Document;
   title?: string;
   description?: string;
@@ -67,6 +67,8 @@ function AddDocumentForm({
   const dialogRef = useModalAccessibility(onClose);
   const [formValues, setFormValues] = useState<DocumentFormValues>(() => getInitialFormValues(initialDocument));
   const [errors, setErrors] = useState<Partial<Record<keyof DocumentFormValues, string>>>({});
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [fileError, setFileError] = useState<string | null>(null);
   const inputClass = "mt-2 w-full rounded-lg border border-stone-200 bg-white px-4 py-3 text-sm text-stone-700 outline-none transition focus:border-[#1677B8] focus-visible:ring-2 focus-visible:ring-[#1677B8] focus-visible:ring-offset-1";
 
   const updateField = <Field extends keyof DocumentFormValues>(
@@ -84,7 +86,8 @@ function AddDocumentForm({
     if (!formValues.category) nextErrors.category = "Category is required.";
     if (!formValues.fileType) nextErrors.fileType = "File type is required.";
     if (!formValues.fileName.trim()) nextErrors.fileName = "File name is required.";
-    if (!formValues.dateAdded) nextErrors.dateAdded = "Date added is required.";
+    if (!initialDocument && !selectedFile) setFileError("Select a file to upload.");
+    if (initialDocument && !formValues.dateAdded) nextErrors.dateAdded = "Date added is required.";
 
     return nextErrors;
   };
@@ -94,7 +97,7 @@ function AddDocumentForm({
     const nextErrors = validateForm();
     setErrors(nextErrors);
 
-    if (Object.keys(nextErrors).length > 0 || !formValues.category || !formValues.fileType) {
+    if (Object.keys(nextErrors).length > 0 || !formValues.category || !formValues.fileType || (!initialDocument && !selectedFile)) {
       return;
     }
 
@@ -106,7 +109,19 @@ function AddDocumentForm({
       fileName: formValues.fileName.trim(),
       description: formValues.description.trim(),
       notes: formValues.notes.trim(),
-    });
+    }, selectedFile ?? undefined);
+  };
+
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0] ?? null;
+    setSelectedFile(file);
+    setFileError(null);
+
+    if (!file) return;
+
+    const extension = file.name.split(".").pop()?.toUpperCase() ?? "";
+    updateField("fileName", file.name);
+    updateField("fileType", extension as DocumentFileType);
   };
 
   return (
@@ -194,12 +209,33 @@ function AddDocumentForm({
                 id="document-file-name"
                 value={formValues.fileName}
                 onChange={(event) => updateField("fileName", event.target.value)}
+                readOnly={!initialDocument && selectedFile !== null}
                 className={inputClass}
                 placeholder="e.g. refrigerator-receipt.pdf"
                 aria-invalid={Boolean(errors.fileName)}
                 aria-describedby={errors.fileName ? "document-file-name-error" : undefined}
               />
               {errors.fileName && <p id="document-file-name-error" role="alert" className="mt-1 text-xs text-red-600">{errors.fileName}</p>}
+            </div>
+
+            <div className="sm:col-span-2">
+              <label htmlFor="document-file" className="text-sm font-medium text-stone-700">Upload document</label>
+              <input
+                id="document-file"
+                type="file"
+                accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
+                onChange={handleFileChange}
+                className="mt-2 block w-full rounded-lg border border-stone-200 bg-white px-4 py-3 text-sm text-stone-700 file:mr-4 file:rounded-md file:border-0 file:bg-stone-100 file:px-3 file:py-2 file:text-sm file:font-medium file:text-stone-700"
+                aria-describedby={fileError ? "document-file-error" : "document-file-help"}
+              />
+              {selectedFile ? (
+                <p id="document-file-help" className="mt-2 text-sm text-stone-500">
+                  Selected: {selectedFile.name} ({(selectedFile.size / 1024 / 1024).toFixed(2)} MB)
+                </p>
+              ) : (
+                <p id="document-file-help" className="mt-2 text-sm text-stone-500">PDF, DOC, DOCX, JPG, JPEG, or PNG. Maximum 10 MB.</p>
+              )}
+              {fileError && <p id="document-file-error" role="alert" className="mt-1 text-xs text-red-600">{fileError}</p>}
             </div>
 
             <div>

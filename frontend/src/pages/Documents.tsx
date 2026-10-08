@@ -19,8 +19,9 @@ import { filterDocuments, type DocumentFilters } from "../utils/documentFilters"
 import { sortDocuments, type DocumentSortOption } from "../utils/documentSorting";
 import type { SearchNavigationState } from "../types/search";
 import {
-  createDocument as createDocumentApi,
+  downloadDocument,
   deleteDocument,
+  uploadDocument,
   updateDocument as updateDocumentApi,
   type DocumentWriteData,
 } from "../services/documentsApi";
@@ -65,6 +66,21 @@ function Documents() {
       expenseId: document.expenseId === undefined ? null : expenses.find((item) => item.id === document.expenseId)?.apiId ?? null,
       notes: document.notes || null,
     });
+
+    const handleDownloadDocument = async (document: Document) => {
+      const currentDocument = documents.find((item) => item.id === document.id);
+      if (!currentDocument?.apiId || !document.hasFile) return;
+
+      try {
+        setOperationError(null);
+        const blob = await downloadDocument(currentDocument.apiId);
+        const url = URL.createObjectURL(blob);
+        window.open(url, "_blank", "noopener,noreferrer");
+        window.setTimeout(() => URL.revokeObjectURL(url), 60_000);
+      } catch (error) {
+        setOperationError(error instanceof Error ? error.message : "We couldn't open this document.");
+      }
+    };
     const documentSummary = getDocumentSummary(documents);
     const categoryBreakdown = getDocumentCategoryBreakdown(documents);
     const filteredDocuments = sortDocuments(filterDocuments(documents, filters), sortOption);
@@ -275,11 +291,31 @@ function Documents() {
             onClose={() => setIsAddDocumentOpen(false)}
             applianceOptions={appliances}
             expenseOptions={expenses}
-            onSave={async (document: DocumentDraft) => {
+            onSave={async (document: DocumentDraft, file?: File) => {
+              if (!file) return;
+
               try {
                 setOperationError(null);
-                const createdDocument = await createDocumentApi(toApiDocument({ ...document, id: Date.now() }));
-                setDocuments((currentDocuments) => [...currentDocuments, { ...document, id: Date.now(), apiId: createdDocument.id }]);
+                const createdDocument = await uploadDocument({
+                  name: document.name,
+                  category: document.category,
+                  description: document.description || null,
+                  applianceId: document.applianceId === undefined ? null : appliances.find((item) => item.id === document.applianceId)?.apiId ?? null,
+                  expenseId: document.expenseId === undefined ? null : expenses.find((item) => item.id === document.expenseId)?.apiId ?? null,
+                  notes: document.notes || null,
+                  file,
+                });
+                setDocuments((currentDocuments) => [...currentDocuments, {
+                  ...document,
+                  id: Date.now(),
+                  apiId: createdDocument.id,
+                  fileName: createdDocument.fileName,
+                  fileType: createdDocument.fileType as Document["fileType"],
+                  dateAdded: createdDocument.dateAdded,
+                  contentType: createdDocument.contentType ?? undefined,
+                  fileSize: createdDocument.fileSize ?? undefined,
+                  hasFile: createdDocument.hasFile,
+                }]);
                 setIsAddDocumentOpen(false);
               } catch {
                 setOperationError("We couldn't save this document. Please try again.");
@@ -315,6 +351,7 @@ function Documents() {
             document={selectedDocument}
             appliances={appliances}
             expenses={expenses}
+            onDownload={selectedDocument.hasFile ? () => handleDownloadDocument(selectedDocument) : undefined}
             onClose={() => setSelectedDocument(null)}
             onDelete={async () => {
               const currentDocument = documents.find((document) => document.id === selectedDocument.id);

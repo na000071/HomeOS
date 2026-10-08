@@ -92,10 +92,13 @@ export const apiRequest = async <T>(
 ): Promise<T> => {
   const headers = new Headers(options.headers);
   headers.set("Accept", "application/json");
-  headers.set("Content-Type", "application/json");
 
   const token = localStorage.getItem(AUTH_TOKEN_STORAGE_KEY);
   const isAuthenticationRequest = path === "/Auth/login" || path === "/Auth/register";
+  const isMultipartBody = typeof FormData !== "undefined" && options.body instanceof FormData;
+  if (!isMultipartBody) {
+    headers.set("Content-Type", "application/json");
+  }
   if (token) {
     headers.set("Authorization", `Bearer ${token}`);
   }
@@ -105,7 +108,7 @@ export const apiRequest = async <T>(
     response = await fetch(`${API_BASE_URL}${path}`, {
       ...options,
       headers,
-      body: options.body === undefined ? undefined : JSON.stringify(options.body),
+      body: options.body === undefined || isMultipartBody ? options.body as BodyInit | null | undefined : JSON.stringify(options.body),
     });
   } catch {
     throw new ApiError(0, "Network Error", "Unable to connect to HomeOS. Please check that the API is running.");
@@ -144,3 +147,29 @@ export const put = <T>(path: string, body: unknown) =>
 
 export const del = <T = void>(path: string) =>
   apiRequest<T>(path, { method: "DELETE" });
+
+export const getBlob = async (path: string): Promise<Blob> => {
+  const headers = new Headers({ Accept: "*/*" });
+  const token = localStorage.getItem(AUTH_TOKEN_STORAGE_KEY);
+
+  if (token) headers.set("Authorization", `Bearer ${token}`);
+
+  let response: Response;
+  try {
+    response = await fetch(`${API_BASE_URL}${path}`, { headers });
+  } catch {
+    throw new ApiError(0, "Network Error", "Unable to connect to HomeOS. Please check that the API is running.");
+  }
+
+  if (response.status === 401) {
+    clearInvalidAuthentication();
+    throw new ApiError(401, response.statusText, "Your session has expired. Please sign in again.");
+  }
+
+  if (!response.ok) {
+    const body = await parseResponseBody(response);
+    throw new ApiError(response.status, response.statusText, getApiErrorMessage(body, response.status));
+  }
+
+  return response.blob();
+};

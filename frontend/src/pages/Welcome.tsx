@@ -7,7 +7,7 @@ function Welcome() {
         className="relative w-full overflow-hidden rounded-[2rem] border border-white/40 bg-cover bg-center shadow-[0_24px_70px_rgba(22,63,91,0.24)] sm:min-h-[620px]"
         style={{
           backgroundImage:
-            "linear-gradient(90deg, rgba(9, 33, 49, 0.74) 0%, rgba(9, 33, 49, 0.54) 42%, rgba(9, 33, 49, 0.12) 100%), url('/images/Hero.png')",
+            "linear-gradient(90deg, rgba(9, 33, 49, 0.74) 0%, rgba(9, 33, 49, 0.54) 42%, rgba(9, 33, 49, 0.12) 100%), url('/images/Hero1.jpg')",
         }}
       >
         <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-[#092131]/22 via-transparent to-transparent" />

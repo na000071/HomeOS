@@ -25,6 +25,16 @@ public class Document
     [MaxLength(255)]
     public string FileName { get; set; } = string.Empty;
 
+    public string? StoredFileName { get; set; }
+
+    public string? ContentType { get; set; }
+
+    public long? FileSize { get; set; }
+
+    public string? StoragePath { get; set; }
+
+    public DateTime? CreatedAt { get; set; }
+
     public DateTime DateAdded { get; set; }
 
     public string? Description { get; set; }

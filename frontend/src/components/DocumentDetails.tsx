@@ -12,11 +12,12 @@ type DocumentDetailsProps = {
   onClose: () => void;
   onEdit: () => void;
   onDelete: () => void;
+  onDownload?: () => void;
   appliances?: Appliance[];
   expenses?: Expense[];
 };
 
-function DocumentDetails({ document, onClose, onEdit, onDelete, appliances, expenses }: DocumentDetailsProps) {
+function DocumentDetails({ document, onClose, onEdit, onDelete, onDownload, appliances, expenses }: DocumentDetailsProps) {
   const dialogRef = useModalAccessibility(onClose);
   const appliance = getDocumentAppliance(document, appliances);
   const expense = getDocumentExpense(document, expenses);
@@ -91,6 +92,11 @@ function DocumentDetails({ document, onClose, onEdit, onDelete, appliances, expe
           <div>
             <p className="text-sm text-stone-500">File name</p>
             <p className="mt-1 break-words text-stone-800">{document.fileName}</p>
+            {document.hasFile ? (
+              onDownload && <button type="button" onClick={onDownload} className="mt-3 rounded-lg bg-[#5E7563] px-4 py-2 text-sm font-medium text-white transition hover:bg-[#4F6655] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#5E7563] focus-visible:ring-offset-2">Open / download file</button>
+            ) : (
+              <p className="mt-2 text-sm text-stone-500">No file attached</p>
+            )}
           </div>
           <div>
             <p className="text-sm text-stone-500">Date added</p>

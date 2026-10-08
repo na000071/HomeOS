@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
 import Card from "../components/Card";
+import GlobalSearch from "../components/GlobalSearch";
 import { useHomeData } from "../context/useHomeData";
 import {
   getDashboardStats,
@@ -120,6 +121,7 @@ function Dashboard() {
 
   return (
     <div className="mx-auto max-w-7xl space-y-8 pb-10">
+      <GlobalSearch />
       <DashboardHeader />
 
       <section aria-labelledby="dashboard-stats-title">

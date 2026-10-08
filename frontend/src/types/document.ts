@@ -27,6 +27,9 @@ export interface Document {
   category: DocumentCategory;
   fileType: DocumentFileType;
   fileName: string;
+  contentType?: string;
+  fileSize?: number;
+  hasFile?: boolean;
   dateAdded: string;
   description: string;
   applianceId?: number;
