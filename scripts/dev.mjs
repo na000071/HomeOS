@@ -60,12 +60,10 @@ const start = async () => {
       continue;
     }
 
-    const command = process.platform === "win32" && service.command === "npm"
-      ? "npm.cmd"
-      : service.command;
-    const child = spawn(command, service.args, {
+    const child = spawn(service.command, service.args, {
       cwd: process.cwd(),
       stdio: "inherit",
+      shell: process.platform === "win32",
     });
     children.push(child);
     console.log(`[${service.name}] starting on port ${service.port}`);
