@@ -2,8 +2,10 @@ import { post } from "./api";
 import type {
   AuthResponse,
   ChangePasswordRequest,
+  ForgotPasswordRequest,
   LoginRequest,
   RegisterRequest,
+  ResetPasswordRequest,
 } from "../types/auth";
 
 export const register = (data: RegisterRequest) =>
@@ -14,3 +16,9 @@ export const login = (data: LoginRequest) =>
 
 export const changePassword = (data: ChangePasswordRequest) =>
   post<void>("/Auth/change-password", data);
+
+export const forgotPassword = (data: ForgotPasswordRequest) =>
+  post<{ message: string }>("/Auth/forgot-password", data);
+
+export const resetPassword = (data: ResetPasswordRequest) =>
+  post<void>("/Auth/reset-password", data);

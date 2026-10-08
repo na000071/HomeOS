@@ -55,7 +55,7 @@ const getInitialRoomId = (appliance?: Appliance): string => {
     }, [initialAppliance]);
     return (
       <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 p-4">
-        <div className="w-full max-w-2xl rounded-xl bg-white p-6 shadow-xl">
+        <div className="max-h-[calc(100vh-2rem)] w-full max-w-2xl overflow-y-auto rounded-xl bg-white p-5 shadow-xl sm:p-6">
           {/* Header */}
           <div className="flex items-start justify-between">
             <div>

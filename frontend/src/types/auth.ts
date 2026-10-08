@@ -28,3 +28,13 @@ export type ChangePasswordRequest = {
   newPassword: string;
   confirmPassword: string;
 };
+
+export type ForgotPasswordRequest = {
+  email: string;
+};
+
+export type ResetPasswordRequest = {
+  email: string;
+  token: string;
+  newPassword: string;
+};

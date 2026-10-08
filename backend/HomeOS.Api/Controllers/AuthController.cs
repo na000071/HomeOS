@@ -2,6 +2,7 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
 using HomeOS.Api.DTOs;
+using HomeOS.Api.Email;
 using HomeOS.Api.Models;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Authorization;
@@ -16,13 +17,19 @@ public class AuthController : ControllerBase
 {
     private readonly UserManager<ApplicationUser> _userManager;
     private readonly IConfiguration _configuration;
+    private readonly IEmailSender _emailSender;
+    private readonly ILogger<AuthController> _logger;
 
     public AuthController(
         UserManager<ApplicationUser> userManager,
-        IConfiguration configuration)
+        IConfiguration configuration,
+        IEmailSender emailSender,
+        ILogger<AuthController> logger)
     {
         _userManager = userManager;
         _configuration = configuration;
+        _emailSender = emailSender;
+        _logger = logger;
     }
 
     [HttpPost("register")]
@@ -100,6 +107,65 @@ public class AuthController : ControllerBase
         }
 
         return NoContent();
+    }
+
+    [HttpPost("forgot-password")]
+    public async Task<IActionResult> ForgotPassword(
+        ForgotPasswordRequestDto request,
+        CancellationToken cancellationToken)
+    {
+        const string genericMessage = "If the email address is registered, a password reset link has been sent.";
+        var user = await _userManager.FindByEmailAsync(request.Email);
+
+        if (user is not null)
+        {
+            var token = await _userManager.GeneratePasswordResetTokenAsync(user);
+            var frontendResetUrl = _configuration["Email:FrontendResetUrl"]
+                ?? throw new InvalidOperationException("Email reset URL is not configured.");
+            var separator = frontendResetUrl.Contains('?') ? "&" : "?";
+            var resetLink = $"{frontendResetUrl}{separator}email={Uri.EscapeDataString(request.Email)}&token={Uri.EscapeDataString(token)}";
+
+            try
+            {
+                await _emailSender.SendPasswordResetAsync(request.Email, resetLink, cancellationToken);
+            }
+            catch (Exception exception)
+            {
+                _logger.LogError(exception, "Password reset email delivery failed.");
+            }
+        }
+
+        return Ok(new { message = genericMessage });
+    }
+
+    [HttpPost("reset-password")]
+    public async Task<IActionResult> ResetPassword(
+        ResetPasswordRequestDto request,
+        CancellationToken cancellationToken)
+    {
+        var user = await _userManager.FindByEmailAsync(request.Email);
+        if (user is null)
+        {
+            return BadRequest("The password reset link is invalid or has expired.");
+        }
+
+        var result = await _userManager.ResetPasswordAsync(user, request.Token, request.NewPassword);
+        if (result.Succeeded)
+        {
+            return NoContent();
+        }
+
+        if (result.Errors.Any(error => error.Code == "InvalidToken"))
+        {
+            return BadRequest("The password reset link is invalid or has expired.");
+        }
+
+        foreach (var error in result.Errors)
+        {
+            ModelState.AddModelError(error.Code, error.Description);
+        }
+
+        return ValidationProblem(ModelState);
     }
 
     private AuthResponseDto CreateAuthResponse(ApplicationUser user)

@@ -14,16 +14,18 @@ import Expenses from "./pages/Expenses";
 import Documents from "./pages/Documents";
 import Reminders from "./pages/Reminders";
 import Settings from "./pages/Settings";
-import Login from "./pages/Login";
-import Register from "./pages/Register";
+import Login from "./pages/Login.tsx";
+import Register from "./pages/Register.tsx";
+import ForgotPassword from "./pages/ForgotPassword.tsx";
+import ResetPassword from "./pages/ResetPassword.tsx";
 
 function FeatureRoutes() {
   return (
     <HomeDataProvider>
-      <div className="flex min-h-screen flex-col bg-transparent md:flex-row">
+      <div className="flex min-h-screen min-w-0 flex-col overflow-x-hidden bg-transparent md:flex-row">
         <Sidebar />
 
-        <main className="min-w-0 flex-1 p-4 sm:p-6 lg:p-8">
+        <main className="min-w-0 flex-1 overflow-x-hidden p-4 sm:p-6 lg:p-8">
           <Routes>
             <Route path="/" element={<Welcome />} />
             <Route path="/dashboard" element={<Dashboard />} />
@@ -49,6 +51,8 @@ function App() {
         <Routes>
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
+          <Route path="/forgot-password" element={<ForgotPassword />} />
+          <Route path="/reset-password" element={<ResetPassword />} />
           <Route
             path="*"
             element={

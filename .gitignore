@@ -22,3 +22,4 @@ Thumbs.db
 
 # Local document uploads
 backend/HomeOS.Api/uploads/documents/
+backend/HomeOS.Api/App_Data/password-reset-emails/

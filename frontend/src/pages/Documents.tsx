@@ -96,7 +96,7 @@ function Documents() {
     return (
       <div>
         {/* Page Header */}
-        <div className="flex items-center justify-between">
+        <div className="flex flex-wrap items-center justify-between gap-4">
           <div>
             <p className="text-sm text-stone-500">Home records</p>
   

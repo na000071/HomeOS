@@ -1,4 +1,5 @@
 using HomeOS.Api.Data;
+using HomeOS.Api.Email;
 using HomeOS.Api.Models;
 using HomeOS.Api.Swagger;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -36,6 +37,16 @@ builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options =>
     })
     .AddEntityFrameworkStores<ApplicationDbContext>()
     .AddDefaultTokenProviders();
+
+builder.Services.Configure<EmailOptions>(builder.Configuration.GetSection("Email"));
+if (string.Equals(builder.Configuration["Email:Provider"], "Smtp", StringComparison.OrdinalIgnoreCase))
+{
+    builder.Services.AddSingleton<IEmailSender, SmtpEmailSender>();
+}
+else
+{
+    builder.Services.AddSingleton<IEmailSender, DevelopmentFileEmailSender>();
+}
 
 var jwtSettings = builder.Configuration.GetSection("Jwt");
 var jwtSigningKey = jwtSettings["SigningKey"]

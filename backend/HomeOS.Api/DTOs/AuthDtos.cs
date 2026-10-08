@@ -51,3 +51,24 @@ public class ChangePasswordRequestDto
     [Compare(nameof(NewPassword))]
     public string ConfirmPassword { get; set; } = string.Empty;
 }
+
+public class ForgotPasswordRequestDto
+{
+    [Required]
+    [EmailAddress]
+    public string Email { get; set; } = string.Empty;
+}
+
+public class ResetPasswordRequestDto
+{
+    [Required]
+    [EmailAddress]
+    public string Email { get; set; } = string.Empty;
+
+    [Required]
+    public string Token { get; set; } = string.Empty;
+
+    [Required]
+    [DataType(DataType.Password)]
+    public string NewPassword { get; set; } = string.Empty;
+}
