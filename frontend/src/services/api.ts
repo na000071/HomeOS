@@ -58,6 +58,10 @@ const getApiErrorMessage = (responseBody: unknown, status: number): string => {
     }
   }
 
+  if (status === 403) return "You do not have permission to perform this action.";
+  if (status === 404) return "The requested record was not found.";
+  if (status >= 500) return "The server encountered an error. Please try again.";
+
   return `Request failed with status ${status}.`;
 };
 
@@ -96,11 +100,16 @@ export const apiRequest = async <T>(
     headers.set("Authorization", `Bearer ${token}`);
   }
 
-  const response = await fetch(`${API_BASE_URL}${path}`, {
-    ...options,
-    headers,
-    body: options.body === undefined ? undefined : JSON.stringify(options.body),
-  });
+  let response: Response;
+  try {
+    response = await fetch(`${API_BASE_URL}${path}`, {
+      ...options,
+      headers,
+      body: options.body === undefined ? undefined : JSON.stringify(options.body),
+    });
+  } catch {
+    throw new ApiError(0, "Network Error", "Unable to connect to HomeOS. Please check that the API is running.");
+  }
 
   const responseBody = await parseResponseBody(response);
 

@@ -2,7 +2,6 @@ import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import Card from "./Card";
 import { useHomeData } from "../context/useHomeData";
-import { roomsData } from "../data/roomsData";
 import { searchHomeData } from "../utils/globalSearch";
 import type {
   SearchNavigationState,
@@ -59,6 +58,7 @@ function GlobalSearch() {
     expenses,
     documents,
     reminders,
+    rooms,
   } = useHomeData();
   const [query, setQuery] = useState("");
   const [resultFilter, setResultFilter] = useState<SearchResultFilter>("all");
@@ -70,8 +70,8 @@ function GlobalSearch() {
     expenses,
     documents,
     reminders,
-    rooms: roomsData,
-  }), [appliances, maintenanceTasks, warranties, expenses, documents, reminders, query]);
+    rooms,
+  }), [appliances, maintenanceTasks, warranties, expenses, documents, reminders, rooms, query]);
   const filteredResults = resultFilter === "all"
     ? results
     : results.filter((result) => result.type === resultFilter);
