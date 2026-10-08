@@ -7,6 +7,9 @@ public class Appliance
 {
     public Guid Id { get; set; } = Guid.NewGuid();
 
+    // Nullable for legacy rows created before ownership was introduced.
+    public string? UserId { get; set; }
+
     [Required]
     [MaxLength(200)]
     public string Name { get; set; } = string.Empty;

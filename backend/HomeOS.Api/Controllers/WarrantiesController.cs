@@ -1,6 +1,7 @@
 using HomeOS.Api.Data;
 using HomeOS.Api.DTOs;
 using HomeOS.Api.Models;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -8,7 +9,8 @@ namespace HomeOS.Api.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public class WarrantiesController : ControllerBase
+[Authorize]
+public class WarrantiesController : UserOwnedControllerBase
 {
     private readonly ApplicationDbContext _dbContext;
 
@@ -21,8 +23,11 @@ public class WarrantiesController : ControllerBase
     public async Task<ActionResult<IEnumerable<WarrantyDto>>> GetAll(
         CancellationToken cancellationToken)
     {
+        if (!TryGetCurrentUserId(out var userId)) return Unauthorized();
+
         var warranties = await _dbContext.Warranties
             .AsNoTracking()
+            .Where(warranty => warranty.UserId == userId)
             .Select(warranty => ToDto(warranty))
             .ToListAsync(cancellationToken);
 
@@ -34,9 +39,11 @@ public class WarrantiesController : ControllerBase
         Guid id,
         CancellationToken cancellationToken)
     {
+        if (!TryGetCurrentUserId(out var userId)) return Unauthorized();
+
         var warranty = await _dbContext.Warranties
             .AsNoTracking()
-            .SingleOrDefaultAsync(currentWarranty => currentWarranty.Id == id, cancellationToken);
+            .SingleOrDefaultAsync(currentWarranty => currentWarranty.Id == id && currentWarranty.UserId == userId, cancellationToken);
 
         return warranty is null ? NotFound() : Ok(ToDto(warranty));
     }
@@ -46,8 +53,10 @@ public class WarrantiesController : ControllerBase
         CreateWarrantyDto warrantyDto,
         CancellationToken cancellationToken)
     {
+        if (!TryGetCurrentUserId(out var userId)) return Unauthorized();
+
         if (warrantyDto.ApplianceId.HasValue &&
-            !await ApplianceExists(warrantyDto.ApplianceId.Value, cancellationToken))
+            !await ApplianceExists(warrantyDto.ApplianceId.Value, userId, cancellationToken))
         {
             return BadRequest("The specified appliance does not exist.");
         }
@@ -55,6 +64,7 @@ public class WarrantiesController : ControllerBase
         var warranty = new Warranty
         {
             Id = Guid.NewGuid(),
+            UserId = userId,
             ApplianceId = warrantyDto.ApplianceId,
             Provider = warrantyDto.Provider,
             WarrantyType = warrantyDto.WarrantyType,
@@ -80,13 +90,15 @@ public class WarrantiesController : ControllerBase
         UpdateWarrantyDto warrantyDto,
         CancellationToken cancellationToken)
     {
+        if (!TryGetCurrentUserId(out var userId)) return Unauthorized();
+
         if (id != warrantyDto.Id)
         {
             return BadRequest("The route ID must match the warranty ID.");
         }
 
         var warranty = await _dbContext.Warranties
-            .SingleOrDefaultAsync(currentWarranty => currentWarranty.Id == id, cancellationToken);
+            .SingleOrDefaultAsync(currentWarranty => currentWarranty.Id == id && currentWarranty.UserId == userId, cancellationToken);
 
         if (warranty is null)
         {
@@ -94,7 +106,7 @@ public class WarrantiesController : ControllerBase
         }
 
         if (warrantyDto.ApplianceId.HasValue &&
-            !await ApplianceExists(warrantyDto.ApplianceId.Value, cancellationToken))
+            !await ApplianceExists(warrantyDto.ApplianceId.Value, userId, cancellationToken))
         {
             return BadRequest("The specified appliance does not exist.");
         }
@@ -116,8 +128,10 @@ public class WarrantiesController : ControllerBase
     [HttpDelete("{id:guid}")]
     public async Task<IActionResult> Delete(Guid id, CancellationToken cancellationToken)
     {
+        if (!TryGetCurrentUserId(out var userId)) return Unauthorized();
+
         var warranty = await _dbContext.Warranties
-            .SingleOrDefaultAsync(currentWarranty => currentWarranty.Id == id, cancellationToken);
+            .SingleOrDefaultAsync(currentWarranty => currentWarranty.Id == id && currentWarranty.UserId == userId, cancellationToken);
 
         if (warranty is null)
         {
@@ -130,10 +144,10 @@ public class WarrantiesController : ControllerBase
         return NoContent();
     }
 
-    private async Task<bool> ApplianceExists(Guid applianceId, CancellationToken cancellationToken)
+    private async Task<bool> ApplianceExists(Guid applianceId, string userId, CancellationToken cancellationToken)
     {
         return await _dbContext.Appliances
-            .AnyAsync(appliance => appliance.Id == applianceId, cancellationToken);
+            .AnyAsync(appliance => appliance.Id == applianceId && appliance.UserId == userId, cancellationToken);
     }
 
     private static WarrantyDto ToDto(Warranty warranty) => new()

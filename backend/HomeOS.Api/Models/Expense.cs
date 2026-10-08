@@ -7,6 +7,9 @@ public class Expense
 {
     public Guid Id { get; set; } = Guid.NewGuid();
 
+    // Nullable for legacy rows created before ownership was introduced.
+    public string? UserId { get; set; }
+
     [Required]
     [MaxLength(100)]
     public string Category { get; set; } = string.Empty;

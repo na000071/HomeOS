@@ -1,6 +1,7 @@
 using HomeOS.Api.Data;
 using HomeOS.Api.DTOs;
 using HomeOS.Api.Models;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -8,7 +9,8 @@ namespace HomeOS.Api.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public class RemindersController : ControllerBase
+[Authorize]
+public class RemindersController : UserOwnedControllerBase
 {
     private readonly ApplicationDbContext _dbContext;
 
@@ -21,8 +23,11 @@ public class RemindersController : ControllerBase
     public async Task<ActionResult<IEnumerable<ReminderDto>>> GetAll(
         CancellationToken cancellationToken)
     {
+        if (!TryGetCurrentUserId(out var userId)) return Unauthorized();
+
         var reminders = await _dbContext.Reminders
             .AsNoTracking()
+            .Where(reminder => reminder.UserId == userId)
             .Select(reminder => ToDto(reminder))
             .ToListAsync(cancellationToken);
 
@@ -34,9 +39,11 @@ public class RemindersController : ControllerBase
         Guid id,
         CancellationToken cancellationToken)
     {
+        if (!TryGetCurrentUserId(out var userId)) return Unauthorized();
+
         var reminder = await _dbContext.Reminders
             .AsNoTracking()
-            .SingleOrDefaultAsync(currentReminder => currentReminder.Id == id, cancellationToken);
+            .SingleOrDefaultAsync(currentReminder => currentReminder.Id == id && currentReminder.UserId == userId, cancellationToken);
 
         return reminder is null ? NotFound() : Ok(ToDto(reminder));
     }
@@ -46,7 +53,9 @@ public class RemindersController : ControllerBase
         CreateReminderDto reminderDto,
         CancellationToken cancellationToken)
     {
-        var referenceError = await ValidateReferences(reminderDto, cancellationToken);
+        if (!TryGetCurrentUserId(out var userId)) return Unauthorized();
+
+        var referenceError = await ValidateReferences(reminderDto, userId, cancellationToken);
         if (referenceError is not null)
         {
             return BadRequest(referenceError);
@@ -55,6 +64,7 @@ public class RemindersController : ControllerBase
         var reminder = new Reminder
         {
             Id = Guid.NewGuid(),
+            UserId = userId,
             Title = reminderDto.Title,
             Description = reminderDto.Description,
             Type = reminderDto.Type,
@@ -82,20 +92,22 @@ public class RemindersController : ControllerBase
         UpdateReminderDto reminderDto,
         CancellationToken cancellationToken)
     {
+        if (!TryGetCurrentUserId(out var userId)) return Unauthorized();
+
         if (id != reminderDto.Id)
         {
             return BadRequest("The route ID must match the reminder ID.");
         }
 
         var reminder = await _dbContext.Reminders
-            .SingleOrDefaultAsync(currentReminder => currentReminder.Id == id, cancellationToken);
+            .SingleOrDefaultAsync(currentReminder => currentReminder.Id == id && currentReminder.UserId == userId, cancellationToken);
 
         if (reminder is null)
         {
             return NotFound();
         }
 
-        var referenceError = await ValidateReferences(reminderDto, cancellationToken);
+        var referenceError = await ValidateReferences(reminderDto, userId, cancellationToken);
         if (referenceError is not null)
         {
             return BadRequest(referenceError);
@@ -120,8 +132,10 @@ public class RemindersController : ControllerBase
     [HttpDelete("{id:guid}")]
     public async Task<IActionResult> Delete(Guid id, CancellationToken cancellationToken)
     {
+        if (!TryGetCurrentUserId(out var userId)) return Unauthorized();
+
         var reminder = await _dbContext.Reminders
-            .SingleOrDefaultAsync(currentReminder => currentReminder.Id == id, cancellationToken);
+            .SingleOrDefaultAsync(currentReminder => currentReminder.Id == id && currentReminder.UserId == userId, cancellationToken);
 
         if (reminder is null)
         {
@@ -136,11 +150,12 @@ public class RemindersController : ControllerBase
 
     private async Task<string?> ValidateReferences(
         CreateReminderDto reminderDto,
+        string userId,
         CancellationToken cancellationToken)
     {
         if (reminderDto.ApplianceId.HasValue &&
             !await _dbContext.Appliances.AnyAsync(
-                appliance => appliance.Id == reminderDto.ApplianceId.Value,
+                appliance => appliance.Id == reminderDto.ApplianceId.Value && appliance.UserId == userId,
                 cancellationToken))
         {
             return "The specified appliance does not exist.";
@@ -148,7 +163,7 @@ public class RemindersController : ControllerBase
 
         if (reminderDto.MaintenanceTaskId.HasValue &&
             !await _dbContext.MaintenanceTasks.AnyAsync(
-                task => task.Id == reminderDto.MaintenanceTaskId.Value,
+                task => task.Id == reminderDto.MaintenanceTaskId.Value && task.UserId == userId,
                 cancellationToken))
         {
             return "The specified maintenance task does not exist.";
@@ -156,7 +171,7 @@ public class RemindersController : ControllerBase
 
         if (reminderDto.WarrantyId.HasValue &&
             !await _dbContext.Warranties.AnyAsync(
-                warranty => warranty.Id == reminderDto.WarrantyId.Value,
+                warranty => warranty.Id == reminderDto.WarrantyId.Value && warranty.UserId == userId,
                 cancellationToken))
         {
             return "The specified warranty does not exist.";
@@ -164,7 +179,7 @@ public class RemindersController : ControllerBase
 
         if (reminderDto.ExpenseId.HasValue &&
             !await _dbContext.Expenses.AnyAsync(
-                expense => expense.Id == reminderDto.ExpenseId.Value,
+                expense => expense.Id == reminderDto.ExpenseId.Value && expense.UserId == userId,
                 cancellationToken))
         {
             return "The specified expense does not exist.";

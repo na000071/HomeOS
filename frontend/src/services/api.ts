@@ -1,3 +1,5 @@
+import { AUTH_TOKEN_STORAGE_KEY, AUTH_USER_STORAGE_KEY } from "../types/auth";
+
 const API_BASE_URL = "http://localhost:5050/api";
 
 export class ApiError extends Error {
@@ -14,6 +16,49 @@ export class ApiError extends Error {
 
 type ApiRequestOptions = Omit<RequestInit, "body"> & {
   body?: unknown;
+};
+
+const clearInvalidAuthentication = (): void => {
+  localStorage.removeItem(AUTH_TOKEN_STORAGE_KEY);
+  localStorage.removeItem(AUTH_USER_STORAGE_KEY);
+
+  if (typeof window === "undefined") return;
+
+  const currentPath = window.location.pathname;
+  if (currentPath !== "/login" && currentPath !== "/register") {
+    window.location.replace("/login");
+  }
+};
+
+const getApiErrorMessage = (responseBody: unknown, status: number): string => {
+  if (typeof responseBody === "string") {
+    return responseBody;
+  }
+
+  if (typeof responseBody === "object" && responseBody !== null) {
+    const body = responseBody as Record<string, unknown>;
+    const validationErrors = body.errors;
+
+    if (typeof validationErrors === "object" && validationErrors !== null) {
+      const messages = Object.values(validationErrors)
+        .flatMap((value) => Array.isArray(value) ? value : [value])
+        .filter((value): value is string => typeof value === "string");
+
+      if (messages.length > 0) {
+        return messages.join(" ");
+      }
+    }
+
+    if (typeof body.detail === "string") {
+      return body.detail;
+    }
+
+    if (typeof body.title === "string") {
+      return body.title;
+    }
+  }
+
+  return `Request failed with status ${status}.`;
 };
 
 const parseResponseBody = async (response: Response): Promise<unknown> => {
@@ -45,6 +90,12 @@ export const apiRequest = async <T>(
   headers.set("Accept", "application/json");
   headers.set("Content-Type", "application/json");
 
+  const token = localStorage.getItem(AUTH_TOKEN_STORAGE_KEY);
+  const isAuthenticationRequest = path === "/Auth/login" || path === "/Auth/register";
+  if (token) {
+    headers.set("Authorization", `Bearer ${token}`);
+  }
+
   const response = await fetch(`${API_BASE_URL}${path}`, {
     ...options,
     headers,
@@ -53,15 +104,21 @@ export const apiRequest = async <T>(
 
   const responseBody = await parseResponseBody(response);
 
-  if (!response.ok) {
-    const message =
-      typeof responseBody === "object" && responseBody !== null && "title" in responseBody
-        ? String(responseBody.title)
-        : typeof responseBody === "string"
-          ? responseBody
-          : `Request failed with status ${response.status}.`;
+  if (response.status === 401) {
+    if (token && !isAuthenticationRequest) {
+      clearInvalidAuthentication();
+      throw new ApiError(401, response.statusText, "Your session has expired. Please sign in again.");
+    }
 
-    throw new ApiError(response.status, response.statusText, message);
+    throw new ApiError(401, response.statusText, getApiErrorMessage(responseBody, 401));
+  }
+
+  if (!response.ok) {
+    throw new ApiError(
+      response.status,
+      response.statusText,
+      getApiErrorMessage(responseBody, response.status),
+    );
   }
 
   return responseBody as T;

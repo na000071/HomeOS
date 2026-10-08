@@ -1,3 +1,6 @@
+export const AUTH_TOKEN_STORAGE_KEY = "homeos.auth.token";
+export const AUTH_USER_STORAGE_KEY = "homeos.auth.user";
+
 export type LoginRequest = {
   email: string;
   password: string;

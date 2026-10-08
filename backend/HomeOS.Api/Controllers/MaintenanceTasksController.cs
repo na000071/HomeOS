@@ -1,6 +1,7 @@
 using HomeOS.Api.Data;
 using HomeOS.Api.DTOs;
 using HomeOS.Api.Models;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -8,7 +9,8 @@ namespace HomeOS.Api.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public class MaintenanceTasksController : ControllerBase
+[Authorize]
+public class MaintenanceTasksController : UserOwnedControllerBase
 {
     private readonly ApplicationDbContext _dbContext;
 
@@ -21,8 +23,11 @@ public class MaintenanceTasksController : ControllerBase
     public async Task<ActionResult<IEnumerable<MaintenanceTaskDto>>> GetAll(
         CancellationToken cancellationToken)
     {
+        if (!TryGetCurrentUserId(out var userId)) return Unauthorized();
+
         var maintenanceTasks = await _dbContext.MaintenanceTasks
             .AsNoTracking()
+            .Where(task => task.UserId == userId)
             .Select(task => ToDto(task))
             .ToListAsync(cancellationToken);
 
@@ -34,9 +39,11 @@ public class MaintenanceTasksController : ControllerBase
         Guid id,
         CancellationToken cancellationToken)
     {
+        if (!TryGetCurrentUserId(out var userId)) return Unauthorized();
+
         var maintenanceTask = await _dbContext.MaintenanceTasks
             .AsNoTracking()
-            .SingleOrDefaultAsync(task => task.Id == id, cancellationToken);
+            .SingleOrDefaultAsync(task => task.Id == id && task.UserId == userId, cancellationToken);
 
         return maintenanceTask is null ? NotFound() : Ok(ToDto(maintenanceTask));
     }
@@ -46,8 +53,10 @@ public class MaintenanceTasksController : ControllerBase
         CreateMaintenanceTaskDto maintenanceTaskDto,
         CancellationToken cancellationToken)
     {
+        if (!TryGetCurrentUserId(out var userId)) return Unauthorized();
+
         if (maintenanceTaskDto.ApplianceId.HasValue &&
-            !await ApplianceExists(maintenanceTaskDto.ApplianceId.Value, cancellationToken))
+            !await ApplianceExists(maintenanceTaskDto.ApplianceId.Value, userId, cancellationToken))
         {
             return BadRequest("The specified appliance does not exist.");
         }
@@ -55,6 +64,7 @@ public class MaintenanceTasksController : ControllerBase
         var maintenanceTask = new MaintenanceTask
         {
             Id = Guid.NewGuid(),
+            UserId = userId,
             Title = maintenanceTaskDto.Title,
             Description = maintenanceTaskDto.Description,
             ApplianceId = maintenanceTaskDto.ApplianceId,
@@ -82,13 +92,15 @@ public class MaintenanceTasksController : ControllerBase
         UpdateMaintenanceTaskDto maintenanceTaskDto,
         CancellationToken cancellationToken)
     {
+        if (!TryGetCurrentUserId(out var userId)) return Unauthorized();
+
         if (id != maintenanceTaskDto.Id)
         {
             return BadRequest("The route ID must match the maintenance task ID.");
         }
 
         var maintenanceTask = await _dbContext.MaintenanceTasks
-            .SingleOrDefaultAsync(task => task.Id == id, cancellationToken);
+            .SingleOrDefaultAsync(task => task.Id == id && task.UserId == userId, cancellationToken);
 
         if (maintenanceTask is null)
         {
@@ -96,7 +108,7 @@ public class MaintenanceTasksController : ControllerBase
         }
 
         if (maintenanceTaskDto.ApplianceId.HasValue &&
-            !await ApplianceExists(maintenanceTaskDto.ApplianceId.Value, cancellationToken))
+            !await ApplianceExists(maintenanceTaskDto.ApplianceId.Value, userId, cancellationToken))
         {
             return BadRequest("The specified appliance does not exist.");
         }
@@ -120,8 +132,10 @@ public class MaintenanceTasksController : ControllerBase
     [HttpDelete("{id:guid}")]
     public async Task<IActionResult> Delete(Guid id, CancellationToken cancellationToken)
     {
+        if (!TryGetCurrentUserId(out var userId)) return Unauthorized();
+
         var maintenanceTask = await _dbContext.MaintenanceTasks
-            .SingleOrDefaultAsync(task => task.Id == id, cancellationToken);
+            .SingleOrDefaultAsync(task => task.Id == id && task.UserId == userId, cancellationToken);
 
         if (maintenanceTask is null)
         {
@@ -134,10 +148,10 @@ public class MaintenanceTasksController : ControllerBase
         return NoContent();
     }
 
-    private async Task<bool> ApplianceExists(Guid applianceId, CancellationToken cancellationToken)
+    private async Task<bool> ApplianceExists(Guid applianceId, string userId, CancellationToken cancellationToken)
     {
         return await _dbContext.Appliances
-            .AnyAsync(appliance => appliance.Id == applianceId, cancellationToken);
+            .AnyAsync(appliance => appliance.Id == applianceId && appliance.UserId == userId, cancellationToken);
     }
 
     private static MaintenanceTaskDto ToDto(MaintenanceTask maintenanceTask) => new()

@@ -29,6 +29,41 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
     {
         base.OnModelCreating(modelBuilder);
 
+        modelBuilder.Entity<Appliance>().HasOne<ApplicationUser>()
+            .WithMany().HasForeignKey(appliance => appliance.UserId)
+            .OnDelete(DeleteBehavior.Restrict);
+        modelBuilder.Entity<Appliance>().HasIndex(appliance => appliance.UserId);
+
+        modelBuilder.Entity<Room>().HasOne<ApplicationUser>()
+            .WithMany().HasForeignKey(room => room.UserId)
+            .OnDelete(DeleteBehavior.Restrict);
+        modelBuilder.Entity<Room>().HasIndex(room => room.UserId);
+
+        modelBuilder.Entity<MaintenanceTask>().HasOne<ApplicationUser>()
+            .WithMany().HasForeignKey(task => task.UserId)
+            .OnDelete(DeleteBehavior.Restrict);
+        modelBuilder.Entity<MaintenanceTask>().HasIndex(task => task.UserId);
+
+        modelBuilder.Entity<Warranty>().HasOne<ApplicationUser>()
+            .WithMany().HasForeignKey(warranty => warranty.UserId)
+            .OnDelete(DeleteBehavior.Restrict);
+        modelBuilder.Entity<Warranty>().HasIndex(warranty => warranty.UserId);
+
+        modelBuilder.Entity<Expense>().HasOne<ApplicationUser>()
+            .WithMany().HasForeignKey(expense => expense.UserId)
+            .OnDelete(DeleteBehavior.Restrict);
+        modelBuilder.Entity<Expense>().HasIndex(expense => expense.UserId);
+
+        modelBuilder.Entity<Document>().HasOne<ApplicationUser>()
+            .WithMany().HasForeignKey(document => document.UserId)
+            .OnDelete(DeleteBehavior.Restrict);
+        modelBuilder.Entity<Document>().HasIndex(document => document.UserId);
+
+        modelBuilder.Entity<Reminder>().HasOne<ApplicationUser>()
+            .WithMany().HasForeignKey(reminder => reminder.UserId)
+            .OnDelete(DeleteBehavior.Restrict);
+        modelBuilder.Entity<Reminder>().HasIndex(reminder => reminder.UserId);
+
         modelBuilder.Entity<Appliance>(entity =>
         {
             entity.HasOne(appliance => appliance.Room)

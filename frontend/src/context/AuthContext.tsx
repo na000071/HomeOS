@@ -1,14 +1,12 @@
 import { createContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import { login as loginRequest, register as registerRequest } from "../services/authApi";
+import { AUTH_TOKEN_STORAGE_KEY, AUTH_USER_STORAGE_KEY } from "../types/auth";
 import type {
   AuthenticatedUser,
   AuthResponse,
   LoginRequest,
   RegisterRequest,
 } from "../types/auth";
-
-const TOKEN_STORAGE_KEY = "homeos.auth.token";
-const USER_STORAGE_KEY = "homeos.auth.user";
 
 type AuthContextValue = {
   user: AuthenticatedUser | null;
@@ -34,16 +32,16 @@ const isStoredUser = (value: unknown): value is AuthenticatedUser => {
 
 const readStoredAuth = (): StoredAuth | null => {
   try {
-    const token = localStorage.getItem(TOKEN_STORAGE_KEY);
-    const storedUser = localStorage.getItem(USER_STORAGE_KEY);
+    const token = localStorage.getItem(AUTH_TOKEN_STORAGE_KEY);
+    const storedUser = localStorage.getItem(AUTH_USER_STORAGE_KEY);
 
     if (!token || !storedUser) return null;
 
     const user = JSON.parse(storedUser) as unknown;
     return isStoredUser(user) ? { token, user } : null;
   } catch {
-    localStorage.removeItem(TOKEN_STORAGE_KEY);
-    localStorage.removeItem(USER_STORAGE_KEY);
+    localStorage.removeItem(AUTH_TOKEN_STORAGE_KEY);
+    localStorage.removeItem(AUTH_USER_STORAGE_KEY);
     return null;
   }
 };
@@ -57,8 +55,8 @@ const toStoredAuth = (response: AuthResponse): StoredAuth => ({
 });
 
 const persistAuth = ({ token, user }: StoredAuth): void => {
-  localStorage.setItem(TOKEN_STORAGE_KEY, token);
-  localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(user));
+  localStorage.setItem(AUTH_TOKEN_STORAGE_KEY, token);
+  localStorage.setItem(AUTH_USER_STORAGE_KEY, JSON.stringify(user));
 };
 
 export function AuthProvider({ children }: { children: ReactNode }) {
@@ -86,8 +84,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const logout = (): void => {
-    localStorage.removeItem(TOKEN_STORAGE_KEY);
-    localStorage.removeItem(USER_STORAGE_KEY);
+    localStorage.removeItem(AUTH_TOKEN_STORAGE_KEY);
+    localStorage.removeItem(AUTH_USER_STORAGE_KEY);
     setAuth(null);
   };
 

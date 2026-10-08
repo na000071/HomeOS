@@ -6,6 +6,9 @@ public class Warranty
 {
     public Guid Id { get; set; } = Guid.NewGuid();
 
+    // Nullable for legacy rows created before ownership was introduced.
+    public string? UserId { get; set; }
+
     public Guid? ApplianceId { get; set; }
 
     public Appliance? Appliance { get; set; }

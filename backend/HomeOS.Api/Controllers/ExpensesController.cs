@@ -1,6 +1,7 @@
 using HomeOS.Api.Data;
 using HomeOS.Api.DTOs;
 using HomeOS.Api.Models;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -8,7 +9,8 @@ namespace HomeOS.Api.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public class ExpensesController : ControllerBase
+[Authorize]
+public class ExpensesController : UserOwnedControllerBase
 {
     private readonly ApplicationDbContext _dbContext;
 
@@ -21,8 +23,11 @@ public class ExpensesController : ControllerBase
     public async Task<ActionResult<IEnumerable<ExpenseDto>>> GetAll(
         CancellationToken cancellationToken)
     {
+        if (!TryGetCurrentUserId(out var userId)) return Unauthorized();
+
         var expenses = await _dbContext.Expenses
             .AsNoTracking()
+            .Where(expense => expense.UserId == userId)
             .Select(expense => ToDto(expense))
             .ToListAsync(cancellationToken);
 
@@ -34,9 +39,11 @@ public class ExpensesController : ControllerBase
         Guid id,
         CancellationToken cancellationToken)
     {
+        if (!TryGetCurrentUserId(out var userId)) return Unauthorized();
+
         var expense = await _dbContext.Expenses
             .AsNoTracking()
-            .SingleOrDefaultAsync(currentExpense => currentExpense.Id == id, cancellationToken);
+            .SingleOrDefaultAsync(currentExpense => currentExpense.Id == id && currentExpense.UserId == userId, cancellationToken);
 
         return expense is null ? NotFound() : Ok(ToDto(expense));
     }
@@ -46,7 +53,9 @@ public class ExpensesController : ControllerBase
         CreateExpenseDto expenseDto,
         CancellationToken cancellationToken)
     {
-        var referenceError = await ValidateReferences(expenseDto, cancellationToken);
+        if (!TryGetCurrentUserId(out var userId)) return Unauthorized();
+
+        var referenceError = await ValidateReferences(expenseDto, userId, cancellationToken);
         if (referenceError is not null)
         {
             return BadRequest(referenceError);
@@ -55,6 +64,7 @@ public class ExpensesController : ControllerBase
         var expense = new Expense
         {
             Id = Guid.NewGuid(),
+            UserId = userId,
             Category = expenseDto.Category,
             Description = expenseDto.Description,
             Amount = expenseDto.Amount,
@@ -79,20 +89,22 @@ public class ExpensesController : ControllerBase
         UpdateExpenseDto expenseDto,
         CancellationToken cancellationToken)
     {
+        if (!TryGetCurrentUserId(out var userId)) return Unauthorized();
+
         if (id != expenseDto.Id)
         {
             return BadRequest("The route ID must match the expense ID.");
         }
 
         var expense = await _dbContext.Expenses
-            .SingleOrDefaultAsync(currentExpense => currentExpense.Id == id, cancellationToken);
+            .SingleOrDefaultAsync(currentExpense => currentExpense.Id == id && currentExpense.UserId == userId, cancellationToken);
 
         if (expense is null)
         {
             return NotFound();
         }
 
-        var referenceError = await ValidateReferences(expenseDto, cancellationToken);
+        var referenceError = await ValidateReferences(expenseDto, userId, cancellationToken);
         if (referenceError is not null)
         {
             return BadRequest(referenceError);
@@ -114,8 +126,10 @@ public class ExpensesController : ControllerBase
     [HttpDelete("{id:guid}")]
     public async Task<IActionResult> Delete(Guid id, CancellationToken cancellationToken)
     {
+        if (!TryGetCurrentUserId(out var userId)) return Unauthorized();
+
         var expense = await _dbContext.Expenses
-            .SingleOrDefaultAsync(currentExpense => currentExpense.Id == id, cancellationToken);
+            .SingleOrDefaultAsync(currentExpense => currentExpense.Id == id && currentExpense.UserId == userId, cancellationToken);
 
         if (expense is null)
         {
@@ -130,11 +144,12 @@ public class ExpensesController : ControllerBase
 
     private async Task<string?> ValidateReferences(
         CreateExpenseDto expenseDto,
+        string userId,
         CancellationToken cancellationToken)
     {
         if (expenseDto.ApplianceId.HasValue &&
             !await _dbContext.Appliances.AnyAsync(
-                appliance => appliance.Id == expenseDto.ApplianceId.Value,
+                appliance => appliance.Id == expenseDto.ApplianceId.Value && appliance.UserId == userId,
                 cancellationToken))
         {
             return "The specified appliance does not exist.";
@@ -142,7 +157,7 @@ public class ExpensesController : ControllerBase
 
         if (expenseDto.MaintenanceTaskId.HasValue &&
             !await _dbContext.MaintenanceTasks.AnyAsync(
-                task => task.Id == expenseDto.MaintenanceTaskId.Value,
+                task => task.Id == expenseDto.MaintenanceTaskId.Value && task.UserId == userId,
                 cancellationToken))
         {
             return "The specified maintenance task does not exist.";

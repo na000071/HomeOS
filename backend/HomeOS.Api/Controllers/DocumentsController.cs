@@ -1,6 +1,7 @@
 using HomeOS.Api.Data;
 using HomeOS.Api.DTOs;
 using HomeOS.Api.Models;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -8,7 +9,8 @@ namespace HomeOS.Api.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public class DocumentsController : ControllerBase
+[Authorize]
+public class DocumentsController : UserOwnedControllerBase
 {
     private readonly ApplicationDbContext _dbContext;
 
@@ -21,8 +23,11 @@ public class DocumentsController : ControllerBase
     public async Task<ActionResult<IEnumerable<DocumentDto>>> GetAll(
         CancellationToken cancellationToken)
     {
+        if (!TryGetCurrentUserId(out var userId)) return Unauthorized();
+
         var documents = await _dbContext.Documents
             .AsNoTracking()
+            .Where(document => document.UserId == userId)
             .Select(document => ToDto(document))
             .ToListAsync(cancellationToken);
 
@@ -34,9 +39,11 @@ public class DocumentsController : ControllerBase
         Guid id,
         CancellationToken cancellationToken)
     {
+        if (!TryGetCurrentUserId(out var userId)) return Unauthorized();
+
         var document = await _dbContext.Documents
             .AsNoTracking()
-            .SingleOrDefaultAsync(currentDocument => currentDocument.Id == id, cancellationToken);
+            .SingleOrDefaultAsync(currentDocument => currentDocument.Id == id && currentDocument.UserId == userId, cancellationToken);
 
         return document is null ? NotFound() : Ok(ToDto(document));
     }
@@ -46,7 +53,9 @@ public class DocumentsController : ControllerBase
         CreateDocumentDto documentDto,
         CancellationToken cancellationToken)
     {
-        var referenceError = await ValidateReferences(documentDto, cancellationToken);
+        if (!TryGetCurrentUserId(out var userId)) return Unauthorized();
+
+        var referenceError = await ValidateReferences(documentDto, userId, cancellationToken);
         if (referenceError is not null)
         {
             return BadRequest(referenceError);
@@ -55,6 +64,7 @@ public class DocumentsController : ControllerBase
         var document = new Document
         {
             Id = Guid.NewGuid(),
+            UserId = userId,
             Name = documentDto.Name,
             Category = documentDto.Category,
             FileType = documentDto.FileType,
@@ -81,20 +91,22 @@ public class DocumentsController : ControllerBase
         UpdateDocumentDto documentDto,
         CancellationToken cancellationToken)
     {
+        if (!TryGetCurrentUserId(out var userId)) return Unauthorized();
+
         if (id != documentDto.Id)
         {
             return BadRequest("The route ID must match the document ID.");
         }
 
         var document = await _dbContext.Documents
-            .SingleOrDefaultAsync(currentDocument => currentDocument.Id == id, cancellationToken);
+            .SingleOrDefaultAsync(currentDocument => currentDocument.Id == id && currentDocument.UserId == userId, cancellationToken);
 
         if (document is null)
         {
             return NotFound();
         }
 
-        var referenceError = await ValidateReferences(documentDto, cancellationToken);
+        var referenceError = await ValidateReferences(documentDto, userId, cancellationToken);
         if (referenceError is not null)
         {
             return BadRequest(referenceError);
@@ -118,8 +130,10 @@ public class DocumentsController : ControllerBase
     [HttpDelete("{id:guid}")]
     public async Task<IActionResult> Delete(Guid id, CancellationToken cancellationToken)
     {
+        if (!TryGetCurrentUserId(out var userId)) return Unauthorized();
+
         var document = await _dbContext.Documents
-            .SingleOrDefaultAsync(currentDocument => currentDocument.Id == id, cancellationToken);
+            .SingleOrDefaultAsync(currentDocument => currentDocument.Id == id && currentDocument.UserId == userId, cancellationToken);
 
         if (document is null)
         {
@@ -134,11 +148,12 @@ public class DocumentsController : ControllerBase
 
     private async Task<string?> ValidateReferences(
         CreateDocumentDto documentDto,
+        string userId,
         CancellationToken cancellationToken)
     {
         if (documentDto.ApplianceId.HasValue &&
             !await _dbContext.Appliances.AnyAsync(
-                appliance => appliance.Id == documentDto.ApplianceId.Value,
+                appliance => appliance.Id == documentDto.ApplianceId.Value && appliance.UserId == userId,
                 cancellationToken))
         {
             return "The specified appliance does not exist.";
@@ -146,7 +161,7 @@ public class DocumentsController : ControllerBase
 
         if (documentDto.ExpenseId.HasValue &&
             !await _dbContext.Expenses.AnyAsync(
-                expense => expense.Id == documentDto.ExpenseId.Value,
+                expense => expense.Id == documentDto.ExpenseId.Value && expense.UserId == userId,
                 cancellationToken))
         {
             return "The specified expense does not exist.";

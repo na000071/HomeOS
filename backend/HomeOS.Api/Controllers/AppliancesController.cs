@@ -1,6 +1,7 @@
 using HomeOS.Api.Data;
 using HomeOS.Api.DTOs;
 using HomeOS.Api.Models;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -8,7 +9,8 @@ namespace HomeOS.Api.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public class AppliancesController : ControllerBase
+[Authorize]
+public class AppliancesController : UserOwnedControllerBase
 {
     private readonly ApplicationDbContext _dbContext;
 
@@ -20,8 +22,11 @@ public class AppliancesController : ControllerBase
     [HttpGet]
     public async Task<ActionResult<IEnumerable<ApplianceDto>>> GetAll(CancellationToken cancellationToken)
     {
+        if (!TryGetCurrentUserId(out var userId)) return Unauthorized();
+
         var appliances = await _dbContext.Appliances
             .AsNoTracking()
+            .Where(appliance => appliance.UserId == userId)
             .Select(appliance => ToDto(appliance))
             .ToListAsync(cancellationToken);
 
@@ -31,9 +36,11 @@ public class AppliancesController : ControllerBase
     [HttpGet("{id:guid}")]
     public async Task<ActionResult<ApplianceDto>> GetById(Guid id, CancellationToken cancellationToken)
     {
+        if (!TryGetCurrentUserId(out var userId)) return Unauthorized();
+
         var appliance = await _dbContext.Appliances
             .AsNoTracking()
-            .SingleOrDefaultAsync(currentAppliance => currentAppliance.Id == id, cancellationToken);
+            .SingleOrDefaultAsync(currentAppliance => currentAppliance.Id == id && currentAppliance.UserId == userId, cancellationToken);
 
         return appliance is null ? NotFound() : Ok(ToDto(appliance));
     }
@@ -43,9 +50,19 @@ public class AppliancesController : ControllerBase
         CreateApplianceDto applianceDto,
         CancellationToken cancellationToken)
     {
+        if (!TryGetCurrentUserId(out var userId)) return Unauthorized();
+
+        if (applianceDto.RoomId.HasValue && !await _dbContext.Rooms.AnyAsync(
+                room => room.Id == applianceDto.RoomId.Value && room.UserId == userId,
+                cancellationToken))
+        {
+            return BadRequest("The specified room does not exist.");
+        }
+
         var appliance = new Appliance
         {
             Id = Guid.NewGuid(),
+            UserId = userId,
             Name = applianceDto.Name,
             Brand = applianceDto.Brand,
             Model = applianceDto.Model,
@@ -70,17 +87,26 @@ public class AppliancesController : ControllerBase
         UpdateApplianceDto applianceDto,
         CancellationToken cancellationToken)
     {
+        if (!TryGetCurrentUserId(out var userId)) return Unauthorized();
+
         if (id != applianceDto.Id)
         {
             return BadRequest("The route ID must match the appliance ID.");
         }
 
         var appliance = await _dbContext.Appliances
-            .SingleOrDefaultAsync(currentAppliance => currentAppliance.Id == id, cancellationToken);
+            .SingleOrDefaultAsync(currentAppliance => currentAppliance.Id == id && currentAppliance.UserId == userId, cancellationToken);
 
         if (appliance is null)
         {
             return NotFound();
+        }
+
+        if (applianceDto.RoomId.HasValue && !await _dbContext.Rooms.AnyAsync(
+            room => room.Id == applianceDto.RoomId.Value && room.UserId == userId,
+            cancellationToken))
+        {
+            return BadRequest("The specified room does not exist.");
         }
 
         appliance.Name = applianceDto.Name;
@@ -102,8 +128,10 @@ public class AppliancesController : ControllerBase
     [HttpDelete("{id:guid}")]
     public async Task<IActionResult> Delete(Guid id, CancellationToken cancellationToken)
     {
+        if (!TryGetCurrentUserId(out var userId)) return Unauthorized();
+
         var appliance = await _dbContext.Appliances
-            .SingleOrDefaultAsync(currentAppliance => currentAppliance.Id == id, cancellationToken);
+            .SingleOrDefaultAsync(currentAppliance => currentAppliance.Id == id && currentAppliance.UserId == userId, cancellationToken);
 
         if (appliance is null)
         {
