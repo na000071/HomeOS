@@ -1,21 +1,65 @@
 import { Link } from "react-router-dom";
 import Card from "../components/Card";
-import ReminderStatusBadge from "../components/ReminderStatusBadge";
-import WarrantyStatusBadge from "../components/WarrantyStatusBadge";
 import { useHomeData } from "../context/useHomeData";
-import { formatMaintenanceDate } from "../services/maintenanceDateService";
-import { getMaintenanceDashboardData } from "../utils/maintenanceDashboard";
-import { getExpenseDashboardData } from "../utils/expenseDashboard";
-import { getWarrantyDashboardData } from "../utils/warrantyDashboard";
-import { sortDocuments } from "../utils/documentSorting";
-import { getReminderStatus } from "../utils/reminderStatus";
-import { getReminderSummary } from "../utils/reminderSummary";
-import { sortReminders } from "../utils/reminderSorting";
+import {
+  getDashboardStats,
+  getGreeting,
+  getNeedsAttention,
+  getRecentActivity,
+  getUpcomingItems,
+  type DashboardItem,
+} from "../utils/dashboardUtils";
 
 const currencyFormatter = new Intl.NumberFormat("en-US", {
   style: "currency",
   currency: "USD",
 });
+
+const toneClasses: Record<DashboardItem["tone"], string> = {
+  danger: "border-red-200 bg-red-50",
+  warning: "border-amber-200 bg-amber-50",
+  info: "border-stone-200 bg-stone-50",
+};
+
+function DashboardHeader() {
+  return (
+    <header className="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
+      <div>
+        <p className="text-sm font-medium text-stone-500">Home overview</p>
+        <h1 className="mt-1 text-3xl font-semibold tracking-tight text-[#20211F]">
+          {getGreeting()}
+        </h1>
+        <p className="mt-2 text-stone-500">Here&apos;s what&apos;s happening with your home.</p>
+      </div>
+    </header>
+  );
+}
+
+function DashboardItemList({ items, emptyMessage }: { items: DashboardItem[]; emptyMessage: string }) {
+  if (items.length === 0) {
+    return <p className="rounded-xl border border-dashed border-stone-300 p-5 text-sm text-stone-500">{emptyMessage}</p>;
+  }
+
+  return (
+    <div className="space-y-3">
+      {items.map((item) => (
+        <Link
+          key={item.key}
+          to={item.href}
+          className={`block rounded-xl border p-4 transition hover:border-[#9DB3A2] hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#5E7563] focus-visible:ring-offset-2 ${toneClasses[item.tone]}`}
+        >
+          <div className="flex items-start justify-between gap-4">
+            <div className="min-w-0">
+              <p className="truncate font-medium text-[#20211F]">{item.title}</p>
+              <p className="mt-1 text-sm text-stone-600">{item.description}</p>
+            </div>
+            <span className="shrink-0 text-right text-xs text-stone-500">{item.meta}</span>
+          </div>
+        </Link>
+      ))}
+    </div>
+  );
+}
 
 function Dashboard() {
   const {
@@ -29,346 +73,138 @@ function Dashboard() {
     isDataLoading,
     dataLoadError,
   } = useHomeData();
-  const warrantyDashboard = getWarrantyDashboardData(warranties, appliances);
-  const maintenanceDashboard = getMaintenanceDashboardData(maintenanceTasks);
-  const expenseDashboard = getExpenseDashboardData(expenses);
-  const recentDocuments = sortDocuments(documents, "newest").slice(0, 3);
-  const reminderSummary = getReminderSummary(reminders);
-  const relevantReminders = sortReminders(
-    reminders.filter((reminder) => getReminderStatus(reminder) !== "Completed"),
-    "dueDateAsc",
-  ).slice(0, 3);
+
+  const stats = getDashboardStats(
+    appliances,
+    rooms,
+    maintenanceTasks,
+    warranties,
+    expenses,
+    documents,
+    reminders,
+  );
+  const needsAttention = getNeedsAttention(maintenanceTasks, warranties, reminders, appliances);
+  const upcomingItems = getUpcomingItems(maintenanceTasks, warranties, expenses, reminders, appliances);
+  const recentActivity = getRecentActivity(appliances, maintenanceTasks, expenses, documents);
+
+  if (isDataLoading) {
     return (
-      <div>
-        {/* Dashboard Header */}
-        <div className="flex items-center justify-between">
-          <div>
-            <p className="text-sm text-stone-500">Good morning</p>
-  
-            <h1 className="mt-1 text-3xl font-semibold tracking-tight text-[#20211F]">
-              Your Home
-            </h1>
-  
-            <p className="mt-2 text-stone-500">
-              Here’s an overview of everything you’re keeping track of.
-            </p>
-          </div>
-  
-          <button className="rounded-lg bg-[#5E7563] px-5 py-3 text-sm font-medium text-white transition hover:bg-[#4F6655]">
-            + Add Item
-          </button>
+      <div className="mx-auto max-w-7xl space-y-8 pb-10">
+        <DashboardHeader />
+        <div className="rounded-2xl border border-stone-200 bg-white p-8 text-center text-sm text-stone-500">
+          Loading your home overview...
         </div>
-
-        {dataLoadError && (
-          <div role="alert" className="mt-6 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
-            {dataLoadError}
-          </div>
-        )}
-
-        {isDataLoading && (
-          <div className="mt-6 rounded-xl border border-stone-200 bg-white p-6 text-center text-stone-500">
-            Loading dashboard data...
-          </div>
-        )}
-  
-        {/* Overview Cards */}
-        <div className="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          {[
-            ["Appliances", appliances.length, "Total appliances"],
-            ["Rooms", rooms.length, "Total rooms"],
-            ["Maintenance", maintenanceDashboard.total, "Total maintenance tasks"],
-            ["Warranties", warrantyDashboard.total, "Total warranties"],
-            ["Expenses", `$${expenseDashboard.total.toFixed(2)}`, "Tracked expenses"],
-            ["Documents", documents.length, "Total documents"],
-          ].map(([title, value, description]) => (
-            <Card key={title} className="p-5">
-              <p className="text-sm text-stone-500">{title}</p>
-              <p className="mt-2 text-3xl font-semibold text-[#20211F]">{value}</p>
-              <p className="mt-1 text-sm text-stone-500">{description}</p>
-            </Card>
-          ))}
-        </div>
-  
-        {/* Upcoming Maintenance */}
-        <section className="mt-8">
-          <div className="flex items-center justify-between">
-            <div>
-              <h2 className="text-xl font-semibold text-[#20211F]">
-                Upcoming Maintenance
-              </h2>
-  
-              <p className="mt-1 text-sm text-stone-500">
-                {maintenanceDashboard.upcoming} upcoming · {maintenanceDashboard.overdue} overdue
-              </p>
-            </div>
-  
-            <button className="text-sm font-medium text-[#5E7563] hover:underline">
-              View all
-            </button>
-          </div>
-  
-          <div className="mt-4 overflow-hidden rounded-xl border border-stone-200 bg-white">
-            {maintenanceDashboard.upcomingTasks.slice(0, 3).map((task, index) => (
-              <div
-                key={task.id}
-                className={`flex items-center justify-between gap-4 p-5 ${index < Math.min(maintenanceDashboard.upcomingTasks.length, 3) - 1 ? "border-b border-stone-100" : ""}`}
-              >
-                <div className="min-w-0">
-                  <h3 className="truncate font-medium text-[#20211F]">{task.title}</h3>
-                  <p className="mt-1 text-sm text-stone-500">{task.room}</p>
-                </div>
-                <div className="shrink-0 text-right">
-                  <p className="text-sm font-medium text-stone-600">{task.status}</p>
-                  <p className="mt-1 text-xs text-stone-400">{task.dueDate}</p>
-                </div>
-              </div>
-            ))}
-            {maintenanceDashboard.upcomingTasks.length === 0 && (
-              <p className="p-5 text-sm text-stone-500">No upcoming maintenance tasks.</p>
-            )}
-          </div>
-        </section>
-
-        {/* Warranty Overview */}
-        <section className="mt-8">
-            <div className="flex items-center justify-between">
-            <div>
-                <h2 className="text-xl font-semibold text-[#20211F]">
-                Warranty Overview
-                </h2>
-
-                <p className="mt-1 text-sm text-stone-500">
-                Keep track of warranties that are active or expiring soon.
-                </p>
-            </div>
-
-            <button className="text-sm font-medium text-[#5E7563] hover:underline">
-                View all
-            </button>
-            </div>
-
-            <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-              {[
-                ["Total Warranties", warrantyDashboard.total, "All tracked warranties"],
-                ["Active", warrantyDashboard.active, "Current coverage"],
-                ["Expiring Soon", warrantyDashboard.expiringSoon, "Within 90 days"],
-                ["Expired", warrantyDashboard.expired, "No longer active"],
-              ].map(([label, value, description]) => (
-                <Card key={label} className="p-5">
-                  <p className="text-sm text-stone-500">{label}</p>
-                  <p className="mt-2 text-3xl font-semibold text-[#20211F]">{value}</p>
-                  <p className="mt-1 text-sm text-stone-500">{description}</p>
-                </Card>
-              ))}
-            </div>
-
-            <div className="mt-5 rounded-xl border border-stone-200 bg-white p-5">
-              <div className="flex items-center justify-between gap-4">
-                <div>
-                  <h3 className="text-lg font-semibold text-[#20211F]">Upcoming Warranties</h3>
-                  <p className="mt-1 text-sm text-stone-500">Coverage that needs attention soon.</p>
-                </div>
-                <span className="text-sm text-stone-500">
-                  {warrantyDashboard.recentlyExpiring.length} upcoming
-                </span>
-              </div>
-
-              {warrantyDashboard.recentlyExpiring.length > 0 ? (
-                <div className="mt-4 space-y-3">
-                  {warrantyDashboard.recentlyExpiring.map((warranty) => (
-                    <div
-                      key={warranty.id}
-                      className="flex flex-col gap-3 rounded-lg border border-stone-100 bg-stone-50 p-4 sm:flex-row sm:items-center sm:justify-between"
-                    >
-                      <div>
-                        <p className="font-medium text-[#20211F]">
-                          {warranty.applianceBrand} {warranty.applianceName}
-                        </p>
-                        <p className="mt-1 text-sm text-stone-500">{warranty.provider}</p>
-                      </div>
-                      <div className="flex items-center gap-3 sm:text-right">
-                        <div>
-                          <p className="text-sm font-medium text-amber-700">
-                            {warranty.daysRemaining} days remaining
-                          </p>
-                          <p className="mt-1 text-xs text-stone-500">
-                            Expires {warranty.expirationDateLabel}
-                          </p>
-                        </div>
-                        <WarrantyStatusBadge status={warranty.status} />
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <p className="mt-4 rounded-lg bg-stone-50 p-4 text-sm text-stone-500">
-                  No warranties need attention soon.
-                </p>
-              )}
-            </div>
-        </section>
-
-        {/* Expenses Summary */}
-        <section className="mt-8">
-            <div className="flex items-center justify-between">
-            <div>
-                <h2 className="text-xl font-semibold text-[#20211F]">
-                Expenses
-                </h2>
-
-                <p className="mt-1 text-sm text-stone-500">
-                A quick look at your home-related spending.
-                </p>
-            </div>
-
-            <button className="text-sm font-medium text-[#5E7563] hover:underline">
-                View all
-            </button>
-            </div>
-
-            <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-3">
-              {[
-                ["Total Expenses", expenseDashboard.total],
-                ["This Month", expenseDashboard.thisMonth],
-                ["This Year", expenseDashboard.thisYear],
-              ].map(([label, amount]) => (
-                <Card key={label} className="p-5">
-                  <p className="text-sm text-stone-500">{label}</p>
-                  <p className="mt-3 text-3xl font-semibold text-[#20211F]">
-                    {currencyFormatter.format(amount as number)}
-                  </p>
-                </Card>
-              ))}
-            </div>
-
-            <div className="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-2">
-              <div className="rounded-xl border border-stone-200 bg-white p-6">
-                <h3 className="font-medium text-[#20211F]">Recent Expenses</h3>
-                <div className="mt-4 space-y-3">
-                  {expenseDashboard.recentExpenses.length > 0 ? expenseDashboard.recentExpenses.map((expense) => (
-                    <div key={expense.id} className="flex items-center justify-between gap-4 border-b border-stone-100 pb-3 last:border-0 last:pb-0">
-                      <div className="min-w-0">
-                        <p className="truncate text-sm font-medium text-[#20211F]">{expense.description}</p>
-                        <p className="mt-1 text-xs text-stone-500">{expense.category} · {expense.date}</p>
-                      </div>
-                      <p className="shrink-0 text-sm font-medium text-stone-800">{currencyFormatter.format(expense.amount)}</p>
-                    </div>
-                  )) : <p className="text-sm text-stone-500">No expenses recorded yet.</p>}
-                </div>
-              </div>
-
-              <div className="rounded-xl border border-stone-200 bg-white p-6">
-                <h3 className="font-medium text-[#20211F]">Top Expense Categories</h3>
-                <div className="mt-4 space-y-4">
-                  {expenseDashboard.topCategories.length > 0 ? expenseDashboard.topCategories.map((category) => (
-                    <div key={category.category}>
-                      <div className="mb-2 flex justify-between text-sm">
-                        <span className="text-stone-600">{category.category} · {category.count}</span>
-                        <span className="font-medium text-[#20211F]">{currencyFormatter.format(category.amount)}</span>
-                      </div>
-                      <div className="h-2 rounded-full bg-stone-100">
-                        <div className="h-2 rounded-full bg-[#5E7563]" style={{ width: `${expenseDashboard.byCategory.find((item) => item.category === category.category)?.percentage ?? 0}%` }} />
-                      </div>
-                    </div>
-                  )) : <p className="text-sm text-stone-500">No expense categories yet.</p>}
-                </div>
-              </div>
-            </div>
-        </section>
-        {/* Documents and Reminders */}
-        <section className="mt-8 grid grid-cols-1 gap-6 lg:grid-cols-2">
-            {/* Recent Documents */}
-            <div>
-            <div className="flex items-center justify-between">
-                <div>
-                <h2 className="text-xl font-semibold text-[#20211F]">
-                    Recent Documents
-                </h2>
-
-                <p className="mt-1 text-sm text-stone-500">
-                    Your recently added home documents.
-                </p>
-                </div>
-
-                <button className="text-sm font-medium text-[#5E7563] hover:underline">
-                View all
-                </button>
-            </div>
-
-            <div className="mt-4 rounded-xl border border-stone-200 bg-white">
-              {recentDocuments.length > 0 ? recentDocuments.map((document, index) => (
-                <div key={document.id} className={`flex items-center justify-between p-5 ${index < recentDocuments.length - 1 ? "border-b border-stone-100" : ""}`}>
-                  <div>
-                    <h3 className="font-medium text-[#20211F]">{document.name}</h3>
-                    <p className="mt-1 text-xs text-stone-400">Added {document.dateAdded}</p>
-                  </div>
-                  <span className="rounded-md bg-stone-100 px-3 py-1 text-xs text-stone-600">{document.category}</span>
-                </div>
-              )) : (
-                <p className="p-5 text-sm text-stone-500">No documents have been added yet.</p>
-              )}
-            </div>
-            </div>
-
-            {/* Reminders */}
-            <div>
-            <div className="flex items-center justify-between">
-                <div>
-                <h2 className="text-xl font-semibold text-[#20211F]">
-                    Reminders
-                </h2>
-
-                <p className="mt-1 text-sm text-stone-500">
-                    Important things coming up.
-                </p>
-                </div>
-
-                <button className="text-sm font-medium text-[#5E7563] hover:underline">
-                View all
-                </button>
-            </div>
-
-            <div className="mt-4 space-y-4">
-              <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
-                {[
-                  ["Total", reminderSummary.total],
-                  ["Upcoming", reminderSummary.upcoming],
-                  ["Due Soon", reminderSummary.dueSoon],
-                  ["Overdue", reminderSummary.overdue],
-                  ["Completed", reminderSummary.completed],
-                ].map(([label, value]) => (
-                  <div key={label} className="rounded-lg border border-stone-200 bg-white p-3">
-                    <p className="text-xs text-stone-500">{label}</p>
-                    <p className="mt-1 text-xl font-semibold text-[#20211F]">{value}</p>
-                  </div>
-                ))}
-              </div>
-
-              {relevantReminders.length > 0 ? relevantReminders.map((reminder) => (
-                <Link
-                  key={reminder.id}
-                  to="/reminders"
-                  aria-label={`Open reminder: ${reminder.title}`}
-                  className="block rounded-xl border border-stone-200 bg-white p-5 transition hover:border-[#C9D7CB] hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#5E7563] focus-visible:ring-offset-2"
-                >
-                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                    <div>
-                      <h3 className="font-medium text-[#20211F]">{reminder.title}</h3>
-                      <p className="mt-1 text-sm text-stone-500">Due {formatMaintenanceDate(reminder.dueDate, "long")}</p>
-                    </div>
-                    <ReminderStatusBadge status={getReminderStatus(reminder)} />
-                  </div>
-                </Link>
-              )) : (
-                <p className="rounded-xl border border-dashed border-stone-300 p-5 text-sm text-stone-500">
-                  No active reminders.
-                </p>
-              )}
-            </div>
-            </div>
-        </section>
       </div>
     );
   }
-  
-  export default Dashboard;
+
+  if (dataLoadError) {
+    return (
+      <div className="mx-auto max-w-7xl space-y-8 pb-10">
+        <DashboardHeader />
+        <div role="alert" className="rounded-2xl border border-red-200 bg-red-50 p-6 text-sm text-red-700">
+          {dataLoadError}
+        </div>
+      </div>
+    );
+  }
+
+  const overviewStats = [
+    ["Appliances", stats.appliances, "Total tracked appliances", "/appliances"],
+    ["Upcoming maintenance", stats.upcomingMaintenance, "Tasks needing attention", "/maintenance"],
+    ["Active warranties", stats.activeWarranties, "Current coverage", "/warranties"],
+    ["Monthly expenses", currencyFormatter.format(stats.monthlyExpenses), "This calendar month", "/expenses"],
+    ["Open reminders", stats.openReminders, "Not completed", "/reminders"],
+    ["Documents", stats.documents, "Home records", "/documents"],
+  ] as const;
+
+  return (
+    <div className="mx-auto max-w-7xl space-y-8 pb-10">
+      <DashboardHeader />
+
+      <section aria-labelledby="dashboard-stats-title">
+        <h2 id="dashboard-stats-title" className="sr-only">Overview statistics</h2>
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
+          {overviewStats.map(([label, value, description, href]) => (
+            <Link key={label} to={href} className="rounded-2xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#5E7563] focus-visible:ring-offset-2">
+              <Card className="h-full p-5 transition hover:border-[#9DB3A2] hover:shadow-sm">
+                <p className="text-sm text-stone-500">{label}</p>
+                <p className="mt-2 text-3xl font-semibold text-[#20211F]">{value}</p>
+                <p className="mt-1 text-sm text-stone-500">{description}</p>
+              </Card>
+            </Link>
+          ))}
+        </div>
+      </section>
+
+      <section className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+        <div>
+          <div className="flex items-end justify-between gap-4">
+            <div>
+              <h2 className="text-xl font-semibold text-[#20211F]">Needs Attention</h2>
+              <p className="mt-1 text-sm text-stone-500">The records most likely to need action next.</p>
+            </div>
+            <Link to="/maintenance" className="text-sm font-medium text-[#5E7563] hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#5E7563]">View records</Link>
+          </div>
+          <div className="mt-4">
+            <DashboardItemList items={needsAttention} emptyMessage="Nothing needs your attention right now." />
+          </div>
+        </div>
+
+        <div>
+          <div className="flex items-end justify-between gap-4">
+            <div>
+              <h2 className="text-xl font-semibold text-[#20211F]">Upcoming</h2>
+              <p className="mt-1 text-sm text-stone-500">The next important home dates and tasks.</p>
+            </div>
+            <Link to="/reminders" className="text-sm font-medium text-[#5E7563] hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#5E7563]">View schedule</Link>
+          </div>
+          <div className="mt-4">
+            <DashboardItemList items={upcomingItems} emptyMessage="Nothing is scheduled yet." />
+          </div>
+        </div>
+      </section>
+
+      <section aria-labelledby="home-overview-title">
+        <div>
+          <h2 id="home-overview-title" className="text-xl font-semibold text-[#20211F]">Home Overview</h2>
+          <p className="mt-1 text-sm text-stone-500">A quick view of the home records you are managing.</p>
+        </div>
+        <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
+          {([
+            ["Rooms", stats.rooms, "/home"],
+            ["Appliances", stats.appliances, "/appliances"],
+            ["Without a room", stats.appliancesWithoutRoom, "/appliances"],
+            ["Maintenance tasks", stats.maintenanceTasks, "/maintenance"],
+            ["Active warranties", stats.activeWarranties, "/warranties"],
+          ] as const).map(([label, value, href]) => (
+            <Link key={label} to={href} className="rounded-xl border border-stone-200 bg-white p-4 transition hover:border-[#9DB3A2] hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#5E7563] focus-visible:ring-offset-2">
+              <p className="text-sm text-stone-500">{label}</p>
+              <p className="mt-2 text-2xl font-semibold text-[#20211F]">{value}</p>
+            </Link>
+          ))}
+        </div>
+      </section>
+
+      <section aria-labelledby="recent-activity-title">
+        <div>
+          <h2 id="recent-activity-title" className="text-xl font-semibold text-[#20211F]">Recent Activity</h2>
+          <p className="mt-1 text-sm text-stone-500">The latest records from your home.</p>
+        </div>
+        <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          {recentActivity.length > 0 ? recentActivity.map((activity) => (
+            <Link key={activity.key} to={activity.href} className="rounded-xl border border-stone-200 bg-white p-4 transition hover:border-[#9DB3A2] hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#5E7563] focus-visible:ring-offset-2">
+              <p className="text-xs font-medium uppercase tracking-wide text-stone-500">{activity.description}</p>
+              <p className="mt-2 truncate font-medium text-[#20211F]">{activity.title}</p>
+              <p className="mt-1 text-sm text-stone-500">{activity.date}</p>
+            </Link>
+          )) : (
+            <p className="col-span-full rounded-xl border border-dashed border-stone-300 p-5 text-sm text-stone-500">No recent activity yet.</p>
+          )}
+        </div>
+      </section>
+    </div>
+  );
+}
+
+export default Dashboard;

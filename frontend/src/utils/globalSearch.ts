@@ -219,5 +219,12 @@ export const searchHomeData = (
 
   return createEntries(data)
     .filter((entry) => normalize(entry.searchableText).includes(normalizedQuery))
-    .map(({ searchableText: _searchableText, ...result }) => result);
+    .map((entry) => ({
+      id: entry.id,
+      type: entry.type,
+      title: entry.title,
+      description: entry.description,
+      route: entry.route,
+      related: entry.related,
+    }));
 };
