@@ -7,7 +7,7 @@ export type DocumentCategory =
   | "Lease"
   | "Other";
 
-export type DocumentFileType = "PDF" | "JPG" | "PNG" | "DOCX";
+export type DocumentFileType = "PDF" | "DOC" | "JPG" | "PNG" | "DOCX";
 
 export const documentCategories = [
   "Receipt",
@@ -19,7 +19,7 @@ export const documentCategories = [
   "Other",
 ] as const satisfies readonly DocumentCategory[];
 
-export const documentFileTypes = ["PDF", "JPG", "PNG", "DOCX"] as const satisfies readonly DocumentFileType[];
+export const documentFileTypes = ["PDF", "DOC", "JPG", "PNG", "DOCX"] as const satisfies readonly DocumentFileType[];
 
 export interface Document {
   id: number;
